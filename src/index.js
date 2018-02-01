@@ -7,7 +7,7 @@ import path from 'path'
 require('electron-debug')({ showDevTools: true })
 if (require('electron-squirrel-startup')) app.quit()
 const thisPlatform = os.platform()
-
+var boinc = require('./boinc')
 let tray
 let auth
 
@@ -30,7 +30,12 @@ function setupTray() {
   tray = new Tray(__dirname + '/img/trayIcon.png')
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Item1', type: 'radio' },
+    {
+      label: 'quit',
+      click() {
+        app.quit()
+      }
+    },
     { label: 'Item2', type: 'radio' },
     { label: 'Item3', type: 'radio', checked: true },
     { label: 'Item4', type: 'radio' }
@@ -48,11 +53,20 @@ function setupTray() {
 
 var init = async () => {
   setupTray()
+  boinc.init()
 }
 
 app.on('ready', init)
 
 process.on('uncaughtException', handleException)
+
+var cleanUp = function(event) {
+  console.log('CLEANUP')
+  boinc.killExisting()
+}
+
+app.on('before-quit', cleanUp)
+app.on('quit', cleanUp)
 
 function handleException(error) {
   console.error(error)
