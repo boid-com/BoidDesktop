@@ -1,7 +1,11 @@
-import { app, BrowserWindow, Menu, Tray, dialog } from 'electron'
+import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain } from 'electron'
 const os = require('os')
 const isDev = require('electron-is-dev')
 const fixPath = require('fix-path')
+const exec = require('child_process').exec
+const config = require('electron-settings')
+const auth = require('./auth')
+const kill = require('tree-kill')
 import firstRun from 'first-run'
 import path from 'path'
 require('electron-debug')({ showDevTools: true })
@@ -9,10 +13,22 @@ if (require('electron-squirrel-startup')) app.quit()
 const thisPlatform = os.platform()
 var boinc = require('./boinc')
 let tray
-let auth
-
+var authWindow = null
 fixPath()
 app.setName('Boid')
+protocol.registerStandardSchemes(['boid'])
+
+auth.events.on('requestLogin', () => {
+  console.log('Need to show Login Window')
+  authWindow = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+  authWindow.on('closed', () => {
+    win = null
+  })
+  authWindow.loadURL(`file://${__dirname}/auth.html`)
+})
 
 if (thisPlatform === 'win32') {
   console.log('found Windows Platform')
@@ -36,9 +52,21 @@ function setupTray() {
         app.quit()
       }
     },
-    { label: 'Item2', type: 'radio' },
-    { label: 'Item3', type: 'radio', checked: true },
-    { label: 'Item4', type: 'radio' }
+    {
+      label: 'Stop Boinc',
+      click() {
+        boinc.cmd('quit')
+      }
+    },
+    {
+      label: 'Item3',
+      type: 'radio',
+      checked: true
+    },
+    {
+      label: 'Item4',
+      type: 'radio'
+    }
   ])
   tray.setToolTip('Boid')
   tray.setContextMenu(contextMenu)
@@ -48,27 +76,44 @@ function setupTray() {
   tray.on('click', (data) => {
     console.log(data)
   })
-  tray.displayBalloon({ title: 'test', content: 'this is content' })
+  // tray.displayBalloon({ title: 'test', content: 'this is content' })
 }
 
 var init = async () => {
   setupTray()
-  boinc.init()
+  auth.init()
+  // protocol.registerHttpProtocol('boid')
+  // boinc.init()
+  ipcMain.on('getDevice', boinc.updateClientState)
+  ipcMain.on('user', auth.parseUserData)
+  ipcMain.on('token', auth.saveToken)
+  boinc.events.on('deviceReady', (device) => {
+    console.log('device is ready', device)
+    if (authWindow) {
+      console.log('found authWindow')
+      authWindow.webContents.send('deviceReady', device)
+    } else {
+      console.log('no authwindow')
+    }
+  })
 }
 
 app.on('ready', init)
 
-process.on('uncaughtException', handleException)
-
 var cleanUp = function(event) {
   console.log('CLEANUP')
+  kill(process.pid)
   boinc.killExisting()
+  exec('Taskkill /IM boinc.exe /F')
 }
 
 app.on('before-quit', cleanUp)
 app.on('quit', cleanUp)
 
-function handleException(error) {
-  console.error(error)
-  app.quit()
-}
+app.on('window-all-closed', function() {
+  console.log('All Windows Closed')
+})
+process.on('uncaughtException', function(err) {
+  console.log(err)
+  cleanUp()
+})

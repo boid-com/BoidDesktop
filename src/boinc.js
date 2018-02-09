@@ -6,10 +6,12 @@ var weakKey = '1061556_a0c611b081f8692b7ef0c11d39e6105c'
 var fs = require('fs-extra')
 var xml2js = require('xml2js')
 var parser = new xml2js.Parser()
-import path from 'path'
+var path = require('path')
 var needsProject = false
 fixPath()
 var thisPlatform = process.platform
+const EventEmitter = require('events')
+var events = new EventEmitter()
 
 var spawnConfig = {
   cwd: path.join(__dirname, 'BOINC')
@@ -65,21 +67,24 @@ var parseClientState = async (state) => {
     cpid: state.host_info[0].host_cpid[0],
     name: state.host_info[0].domain_name[0],
     os: {
-      name: state.host_info[0].os_name[0],
-      version: state.host_info[0].os_version[0]
+      name: state.host_info[0].os_name[0]
+      // version: state.host_info[0].os_version[0]
     },
     cpu: {
       threads: state.host_info[0].p_ncpus[0],
       model: state.host_info[0].p_model[0]
     }
   }
+  events.emit('deviceReady', b.device)
 }
 
 var killExisting = async () => {
   try {
-    if (b.boincD) b.boincD.kill()
-    if (thisPlatform === 'win32') await execP('Taskkill /IM boinc.exe /F')
-    else await execP('pkill -9 boinc')
+    if (b.boincD) boinc.cmd('quit')
+    else {
+      if (thisPlatform === 'win32') await execP('Taskkill /IM boinc.exe /F')
+      else await execP('pkill -9 boinc')
+    }
     console.log('removed existing')
   } catch (error) {
     console.log('No Existing processes')
@@ -87,6 +92,7 @@ var killExisting = async () => {
 }
 
 var b = {
+  events,
   boincD: null,
   boincCMD: null,
   device: null,
