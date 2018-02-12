@@ -30,7 +30,16 @@
       },
       "electronPackagerConfig": {
         "packageManager": "npm",
-        "name": "<%= productName %>"
+        "name": "<%= productName %>",
+        "protocols": [
+          {
+            "name": "boid",
+            "role": "Viewer",
+            "schemes": [
+              "boid"
+            ]
+          }
+        ]
       },
       "electronWinstallerConfig": {
         "name": "electroboid"
@@ -56,6 +65,12 @@
     "electron-squirrel-startup": "^1.0.0",
     "first-run": "^1.2.0",
     "fix-path": "^2.1.0",
+<<<<<<< HEAD
+=======
+    "fs-extra": "^5.0.0",
+    "graphql-request": "^1.4.1",
+    "tree-kill": "^1.2.0",
+>>>>>>> b5f346f0a7ba79d400f980fab2b6a90f17899cf0
     "xml2js": "^0.4.19"
   },
   "devDependencies": {
