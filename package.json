@@ -1,6 +1,6 @@
 {
   "name": "boiddesktop",
-  "productName": "Boid Desktop",
+  "productName": "Boid",
   "version": "0.0.01",
   "description": "Desktop Application for the Boid platform",
   "main": "src/index.js",
@@ -21,7 +21,7 @@
           "squirrel"
         ],
         "darwin": [
-          "zip"
+          "dmg"
         ],
         "linux": [
           "deb",
@@ -29,15 +29,18 @@
         ]
       },
       "electronPackagerConfig": {
+        "asar": true,
         "packageManager": "npm",
         "name": "<%= productName %>",
-        "protocols": [{
-          "name": "boid",
-          "role": "Viewer",
-          "schemes": [
-            "boid"
-          ]
-        }]
+        "protocols": [
+          {
+            "name": "boid",
+            "role": "Viewer",
+            "schemes": [
+              "boid"
+            ]
+          }
+        ]
       },
       "electronWinstallerConfig": {
         "name": "electroboid"
@@ -56,15 +59,19 @@
   },
   "dependencies": {
     "child-process-promise": "^2.2.1",
+    "decompress-zip": "^0.3.0",
     "electron-compile": "^6.4.2",
     "electron-debug": "^1.5.0",
     "electron-is-dev": "^0.3.0",
     "electron-settings": "^3.1.4",
     "electron-squirrel-startup": "^1.0.0",
+    "electron-sudo": "^4.0.12",
     "first-run": "^1.2.0",
     "fix-path": "^2.1.0",
     "fs-extra": "^5.0.0",
     "graphql-request": "^1.4.1",
+    "node-zip": "^1.1.1",
+    "sudo-prompt": "^8.1.0",
     "tree-kill": "^1.2.0",
     "xml2js": "^0.4.19"
   },

@@ -1,6 +1,6 @@
 const config = require('electron-settings')
 const EventEmitter = require('events')
-var api = require('./api.js')
+// var api = require('./api.js')
 var events = new EventEmitter()
 
 var auth = {
@@ -9,6 +9,7 @@ var auth = {
     var token = config.get('token')
     if (token) {
       console.log('found Token', token)
+
       // api.setupClient(token)
       auth.events.emit('requestLogin')
     } else auth.events.emit('requestLogin')
@@ -20,6 +21,10 @@ var auth = {
     console.log('received Token Data in Auth', token)
     config.set('token', token.token)
     config.set('id', token.id)
+  },
+  returnToken() {
+    console.log('got return token request')
+    return config.get('token')
   }
 }
 
