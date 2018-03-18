@@ -1,0 +1,51 @@
+{
+  "name": "boiddesktop",
+  "productName": "Boid",
+  "version": "0.0.01",
+  "description": "Desktop Application for the Boid platform",
+  "main": "es6-shim.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "eslint src --color"
+  },
+  "keywords": [],
+  "author": "boid",
+  "license": "MIT",
+  "config": {},
+  "dependencies": {
+    "child-process-promise": "^2.2.1",
+    "decompress-zip": "^0.3.0",
+    "electron-compile": "^6.4.2",
+    "electron-debug": "^1.5.0",
+    "electron-is-dev": "^0.3.0",
+    "electron-settings": "^3.1.4",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-sudo": "^4.0.12",
+    "first-run": "^1.2.0",
+    "fix-path": "^2.1.0",
+    "fs-extra": "^5.0.0",
+    "graphql-request": "^1.4.1",
+    "node-zip": "^1.1.1",
+    "sudo-prompt": "^8.1.0",
+    "tree-kill": "^1.2.0",
+    "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-preset-env": "^1.6.1",
+    "babel-preset-react": "^6.24.1",
+    "electron-forge": "^4.2.0",
+    "electron-prebuilt-compile": "1.8.2-beta.3",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^15.1.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "eslint-plugin-prettier": "^2.5.0",
+    "eslint-plugin-react": "^7.5.1"
+  },
+  "originalMain": "src/index.js"
+}

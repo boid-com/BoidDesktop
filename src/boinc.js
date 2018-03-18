@@ -21,15 +21,20 @@ var options = {
   // icns: '/Applications/Electron.app/Contents/Resources/Electron.icns'
 }
 import { app } from 'electron'
-var BOINCPATH = path.join(app.getPath('home'), '.Boid')
-console.log('BOINCPATH:', BOINCPATH)
 
-if (isDev) var RESOURCEDIR = path.join(__dirname, '../')
-else var RESOURCEDIR = ''
+var HOMEPATH = dir(path.join(app.getPath('home'), '.Boid'))
+var BOINCPATHRAW = path.join(HOMEPATH, 'BOINC')
+var BOINCPATH = dir(BOINCPATHRAW)
+var RESOURCEDIR = dir(path.join(__dirname, '../'))
+console.log('BOINCPATH:', BOINCPATH)
 
 var spawnConfig = {
   cwd: BOINCPATH,
   name: 'Boid Secure Sandbox'
+}
+
+function dir(dir) {
+  return dir.replace(/(["\s'$`\\])/g, '\\ ')
 }
 
 function setupBoincDListeners() {
@@ -49,9 +54,8 @@ function setupBoincDListeners() {
       b.events.emit('showWindow')
     }
   })
-
   b.boincD.stderr.on('data', (data) => {
-    console.log(`boincD: ${data}`)
+    console.log(`boincDErr: ${data}`)
   })
 
   b.boincD.on('close', (code) => {
@@ -59,7 +63,23 @@ function setupBoincDListeners() {
     b.checkExisting()
   })
 }
-
+async function clearLocks() {
+  if (b.initializing) return
+  var slots = path.join(BOINCPATH, 'slots')
+  try {
+    var folders = await fs.readdir(slots)
+    folders = folders.filter((el) => {
+      return el != '.DS_Store'
+    })
+    folders.forEach(async (el) => {
+      console.log(path.join(BOINCPATH, 'slots', el, 'boinc_lockfile'))
+      var result = await fs.remove(path.join(slots, el, 'boinc_lockfile')).catch(console.log)
+      console.log(result)
+    })
+  } catch (err) {
+    console.log('SLOTS ERR', err)
+  }
+}
 var addUserProject = async () => {
   var userProjectURL = 'http://www.worldcommunitygrid.org/'
   var addProject = 'project_attach ' + userProjectURL + ' ' + weakKey
@@ -146,7 +166,7 @@ var b = {
     }
   },
   dataDir() {
-    if (thisPlatform != 'win32') return BOINCPATH
+    if (thisPlatform != 'win32') return BOINCPATHRAW
     else return 'C:/BOINC/'
   },
   updateClientState,
@@ -182,16 +202,7 @@ var b = {
   },
   sandbox: async () => {
     return new Promise((resolve, reject) => {
-      var cmd =
-        'unzip -o ' +
-        path.join(RESOURCEDIR, 'BOINC-Darwin.zip').replace(' ', '\\ ') +
-        ' -d ' +
-        BOINCPATH +
-        ' && ' +
-        'sh ' +
-        path.join(RESOURCEDIR, 'BoidSandbox.sh') +
-        ' ' +
-        BOINCPATH
+      var cmd = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH + ' && ' + 'sh ' + path.join(RESOURCEDIR, 'BoidSandbox.sh') + ' ' + BOINCPATH
       // cmd = cmd.replace(' ', '\\ ')
       console.log(cmd)
       sudo.exec(cmd, spawnConfig, function(err, stdout, stderr) {
@@ -227,9 +238,10 @@ var b = {
   },
   init: async (force) => {
     await killExisting()
+    await clearLocks()
     // await fs.outputFile(path.join(b.dataDir(), 'remote_hosts.cfg'), 'localhost').catch(console.log)
     try {
-      var exists = await fs.exists(path.join(b.dataDir(), './client_state.xml'))
+      var exists = await fs.exists(path.join(BOINCPATHRAW, 'client_state.xml'))
       if (exists && !force) return console.log('client_state exists')
       else {
         if (b.initializing) return console.log('already initializing...')
@@ -242,7 +254,8 @@ var b = {
         })
       }
     } catch (err) {
-      console.log('there was an error')
+      console.log('there was an error', err)
+      b.events('error', err)
     }
   },
   start: async () => {
@@ -258,13 +271,9 @@ var b = {
     b.events.emit('toggle', true)
   },
   cmd: async (cmd) => {
-    try {
-      var pass = await fs.readFile(path.join(b.dataDir(), '/gui_rpc_auth.cfg'), 'utf8')
-    } catch (error) {
-      var pass = ' '
-    }
     var cmd = new Promise(async function(resolve, reject) {
-      exec('./boinccmd ' + ' --' + cmd, spawnConfig, function(err, stdout, stderr) {
+      exec('./boinccmd ' + ' --' + cmd, { cwd: b.dataDir() }, function(err, stdout, stderr) {
+        cmd.then(console.log)
         if (err) resolve(err)
         if (stderr) resolve(stderr), console.log(stderr)
         console.log(stdout)

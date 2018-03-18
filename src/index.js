@@ -3,12 +3,12 @@ const os = require('os')
 const isDev = require('electron-is-dev')
 const fixPath = require('fix-path')
 const exec = require('child_process').exec
-const config = require('electron-settings')
 const auth = require('./auth')
 const kill = require('tree-kill')
 import firstRun from 'first-run'
 import path from 'path'
 import boinc from './boinc'
+var config = null
 // require('electron-debug')({
 //   showDevTools: true
 // })
@@ -24,32 +24,27 @@ const id = powerSaveBlocker.start('prevent-app-suspension')
 if (thisPlatform === 'win32') {
   console.log('found Windows Platform')
 } else if (thisPlatform === 'darwin') {
-  app.dock.hide()
+  // app.dock.hide()
   console.log('found MacOS platform')
-}
-config.set('stayAwake', true)
-if (!isDev && firstRun()) {
-  config.set('stayAwake', true)
-  app.setLoginItemSettings({
-    openAtLogin: true
-  })
 }
 
 var powerBlocker
-
-if (config.get('stayAwake')) {
-  powerBlocker = powerSaveBlocker.start('prevent-app-suspension')
-  console.log('STARTED BLOCKING SHUTDOWN', powerSaveBlocker.isStarted(powerBlocker))
-} else {
-  if (powerBlocker) {
-    powerSaveBlocker.stop(powerBlocker)
-  }
-}
 
 function setupTray() {
   tray = new Tray(path.join(__dirname, 'img', 'trayIcon.png'))
 
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: 'Open Window',
+      click() {
+        if (appWindow) {
+          console.log('found exisiting appWindow')
+          appWindow.show()
+        } else {
+          setupWindow()
+        }
+      }
+    },
     {
       label: 'quit',
       click() {
@@ -60,12 +55,6 @@ function setupTray() {
       label: 'Stop Boinc',
       click() {
         boinc.cmd('quit')
-      }
-    },
-    {
-      label: 'Open Window',
-      click() {
-        appWindow.show()
       }
     }
   ])
@@ -91,7 +80,8 @@ function setupWindow() {
     fullscreenable: false,
     title: 'Boid Desktop'
   })
-  appWindow.loadURL(`file://${__dirname}/appwindow.html`)
+  if (isDev) appWindow.loadURL(`file://${__dirname}/appwindowDev.html`)
+  else appWindow.loadURL(`file://${__dirname}/appwindow.html`)
 
   auth.events.on('requestLogin', () => {
     appWindow.webContents.send('requestLogin')
@@ -100,6 +90,8 @@ function setupWindow() {
 
   appWindow.on('close', () => {
     console.log('got Close Event')
+    app.dock.hide()
+    appWindow = null
   })
   appWindow.on('minimize', () => {
     console.log('got Minimize Event')
@@ -107,11 +99,15 @@ function setupWindow() {
   appWindow.on('hide', () => {
     console.log('got Hide Event')
   })
+  appWindow.onbeforeunload = (e) => {
+    console.log('I do not want to be closed')
+    e.returnValue = false
+  }
+  appWindow.on('ready-to-show', () => {
+    appWindow.show()
+    app.dock.show()
+  })
 
-  // appWindow.onbeforeunload = (e) => {
-  //   console.log('I do not want to be closed')
-  //   e.returnValue = false // equivalent to `return false` but not recommended
-  // }
   boinc.events.on('showWindow', () => {
     appWindow.once('hide', () => {
       console.log('got Hide Event')
@@ -169,12 +165,32 @@ function setupWindow() {
     console.log('got toggle event in index')
     appWindow.webContents.send('boinc.toggle', value)
   })
+  boinc.events.on('error', (value) => {
+    console.log('got error event in index')
+    appWindow.webContents.send('boinc.error', value)
+  })
 }
 var init2 = function() {
   console.log(app.getPath('home'))
   boinc.init()
 }
 var init = async () => {
+  config = require('electron-settings')
+  config.set('stayAwake', true)
+  if (!isDev && firstRun()) {
+    config.set('stayAwake', true)
+    app.setLoginItemSettings({
+      openAtLogin: true
+    })
+  }
+  if (config.get('stayAwake')) {
+    powerBlocker = powerSaveBlocker.start('prevent-app-suspension')
+    console.log('STARTED BLOCKING SHUTDOWN', powerSaveBlocker.isStarted(powerBlocker))
+  } else {
+    if (powerBlocker) {
+      powerSaveBlocker.stop(powerBlocker)
+    }
+  }
   setupTray()
   await setupWindow()
   setTimeout(() => {
@@ -196,7 +212,7 @@ app.on('window-all-closed', function() {
   console.log('All Windows Closed')
 })
 process.on('uncaughtException', function(err) {
-  console.log(err)
+  console.log('UNCAUCH EXCEPTION', err)
   cleanUp()
 })
 

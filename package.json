@@ -17,28 +17,20 @@
   "config": {
     "forge": {
       "make_targets": {
-        "win32": [
-          "squirrel"
-        ],
-        "darwin": [
-          "dmg"
-        ],
-        "linux": [
-          "deb",
-          "rpm"
-        ]
+        "win32": ["squirrel"],
+        "darwin": ["dmg"],
+        "linux": ["deb", "rpm"]
       },
       "electronPackagerConfig": {
-        "asar": true,
+        "asar": false,
+        "icon": "./logo",
         "packageManager": "npm",
         "name": "<%= productName %>",
         "protocols": [
           {
             "name": "boid",
             "role": "Viewer",
-            "schemes": [
-              "boid"
-            ]
+            "schemes": ["boid"]
           }
         ]
       },
