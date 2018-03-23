@@ -120,7 +120,19 @@ var updateClientState = async () => {
 }
 
 var parseClientState = async (state) => {
+  var wcgid = null
+  try {
+    var wcg = state.project.findIndex((project)=>{
+      return project.project_name[0] == 'World Community Grid'
+    })
+    if(wcg > -1){
+      wcgid = state.project[wcg].hostid[0]
+    }
+  } catch (error) {
+    console.log('lul')
+  }
   b.device = {
+    wcgid,
     cpid: state.host_info[0].host_cpid[0],
     name: state.host_info[0].domain_name[0],
     os: {
@@ -276,7 +288,7 @@ var b = {
         cmd.then(console.log)
         if (err) resolve(err)
         if (stderr) resolve(stderr), console.log(stderr)
-        console.log(stdout)
+        // console.log(stdout)
         resolve(stdout)
       })
     })
