@@ -18,6 +18,7 @@ let tray
 var authWindow = null
 fixPath()
 app.setName('Boid')
+app.disableHardwareAcceleration()
 protocol.registerStandardSchemes(['boid'])
 var appWindow
 const id = powerSaveBlocker.start('prevent-app-suspension')
@@ -131,6 +132,11 @@ function setupWindow() {
   })
   ipcMain.on('startBoinc', boinc.start)
   ipcMain.on('initBoinc', boinc.init)
+  ipcMain.on('boinc.config.get', boinc.config.get)
+  ipcMain.on('boinc.config.set', (event, configData)=>{
+    console.log('got ConfigData in Index',configData)
+    boinc.config.set(configData)
+  })
   ipcMain.on('boinc.activeTasks', async (event) => {
     try {
       var result = await boinc.activeTasks()
@@ -155,7 +161,6 @@ function setupWindow() {
   boinc.events.on('deviceReady', (device) => {
     // console.log('device is ready', device)
     if (appWindow) {
-      // console.log('found appWindow')
       appWindow.webContents.send('deviceReady', device)
     } else {
       console.log('no appWindow')
@@ -164,6 +169,13 @@ function setupWindow() {
   boinc.events.on('toggle', (value) => {
     console.log('got toggle event in index')
     appWindow.webContents.send('boinc.toggle', value)
+  })
+  boinc.events.on('config', (value) => {
+    appWindow.webContents.send('boinc.config', value)
+  })
+  boinc.events.on('suspended', (value) => {
+    console.log('got suspended event in index')
+    appWindow.webContents.send('boinc.suspended', value)
   })
   boinc.events.on('error', (value) => {
     console.log('got error event in index')
@@ -175,6 +187,11 @@ var init2 = function() {
   boinc.init()
 }
 var init = async () => {
+  setInterval(()=>{
+    var metrics = app.getAppMetrics()
+    // console.log(metrics)
+  },5000)
+
   config = require('electron-settings')
   config.set('stayAwake', true)
   if (!isDev && firstRun()) {

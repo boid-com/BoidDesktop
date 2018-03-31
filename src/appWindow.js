@@ -28,6 +28,13 @@ webview.addEventListener('dom-ready', () => {
     webview.send('boinc.toggle', toggle)
   })
 
+  ipcRenderer.on('boinc.suspended', (event, toggle) => {
+    webview.send('boinc.suspended', toggle)
+  })
+  ipcRenderer.on('boinc.config', (event, value) => {
+    webview.send('boinc.config', value)
+  })
+
   ipcRenderer.on('boinc.activeTasks', (event, tasks) => {
     webview.send('boinc.activeTasks', tasks)
   })

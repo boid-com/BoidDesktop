@@ -8,6 +8,8 @@ var weakKey = '1061556_a0c611b081f8692b7ef0c11d39e6105c'
 var fs = require('fs-extra')
 var xml2js = require('xml2js')
 var parser = new xml2js.Parser()
+var configParser = new xml2js.Parser({explicitArray:false})
+var builder = new xml2js.Builder({headless:true})
 var path = require('path')
 var needsProject = false
 fixPath()
@@ -26,6 +28,7 @@ var HOMEPATH = dir(path.join(app.getPath('home'), '.Boid'))
 var BOINCPATHRAW = path.join(HOMEPATH, 'BOINC')
 var BOINCPATH = dir(BOINCPATHRAW)
 var RESOURCEDIR = dir(path.join(__dirname, '../'))
+var global_preferences = {run_if_user_active:'1',cpu_usage_limit:'80.0',max_ncpus_pct:'100',idle_time_to_run:'3.0',ram_max_used_busy_pct:'50.0',ram_max_used_idle_pct:'75.0'}
 console.log('BOINCPATH:', BOINCPATH)
 
 var spawnConfig = {
@@ -52,7 +55,17 @@ function setupBoincDListeners() {
         b.init(true)
       }, 2000)
       b.events.emit('showWindow')
+    } else if (data.indexOf('Another instance of BOINC is running')> -1){
+      b.boincD = null
+      b.start()
+    } else if (data.indexOf('Suspending computation - on batteries') > -1) {
+      b.events.emit('suspended','on batteries')
+    } else if (data.indexOf('Suspending computation - computer is in use') > -1) {
+      b.events.emit('suspended','computer is in use')
+    } else if (data.indexOf('Resuming network activity') > -1 || data.indexOf('Resuming computation') > -1) {
+      b.events.emit('suspended',false)
     }
+    
   })
   b.boincD.stderr.on('data', (data) => {
     console.log(`boincDErr: ${data}`)
@@ -149,11 +162,11 @@ var parseClientState = async (state) => {
 
 var killExisting = async () => {
   try {
-    if (b.boincD) boinc.cmd('quit')
-    else {
+    // if (b.boincD) boinc.cmd('quit')
+    // else {
       if (thisPlatform === 'win32') await execP('Taskkill /IM boinc.exe /F')
       else await execP('pkill -9 boinc')
-    }
+    // }
     console.log('removed existing')
   } catch (error) {
     console.log('No Existing processes')
@@ -167,6 +180,7 @@ var b = {
   boincCMD: null,
   device: null,
   projects: null,
+  shouldBeRunning: false,
   activeTasks: async () => {
     try {
       var state = await updateClientState()
@@ -181,11 +195,50 @@ var b = {
     if (thisPlatform != 'win32') return BOINCPATHRAW
     else return 'C:/BOINC/'
   },
+  globalPrefs(){return path.join(b.dataDir(), 'global_prefs_override.xml')},
   updateClientState,
   killExisting,
   delete: async () => {
     await fs.remove(BOINCPATH).catch(console.log)
     console.log('DELETED BOINC DIR')
+  },
+  config:{
+    get:async()=>{
+      // var configXML = await fs.readFile(path.join(b.dataDir(), 'cc_config.xml'))
+      try {
+        var prefsXml = await fs.readFile(b.globalPrefs()) 
+      } catch (error) {
+        console.log('PREFSXML:',prefsXml)
+        // console.log(error)
+      }
+      if(!prefsXml){
+        var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(console.log)
+        b.config.get()
+      }
+      else
+        configParser.parseString(prefsXml, async function(err, result) {
+          if (err) return console.log(err)
+          else {
+            if (result) {
+              var preferences = result.global_preferences
+              for (var key in preferences){
+                if (preferences.hasOwnProperty(key)){
+                  preferences[key] = parseFloat(preferences[key])
+                }
+              }
+              console.log('Parsed Prefs XML:',preferences)
+              b.events.emit('config',preferences)
+              return preferences
+            } else return null
+          }
+        })
+    },
+    set:async(global_preferences)=>{
+      console.log('got configData in BOINC!!!')
+      var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(console.log)
+      await b.cmd('read_global_prefs_override')
+      b.config.get()
+    }
   },
   unzip: async () => {
     var unzipper = new unzip(path.join(RESOURCEDIR, 'BOINC-Darwin.zip'))
@@ -228,7 +281,7 @@ var b = {
           }
         }
         if (stderr) {
-          console.log(stderr)
+          // console.log(stderr)
           reject(stderr)
         }
       })
@@ -271,6 +324,7 @@ var b = {
     }
   },
   start: async () => {
+    b.shouldBeRunning = true
     await b.init()
     b.boincD = spawn('./boinc', {
       silent: false,
@@ -283,11 +337,12 @@ var b = {
     b.events.emit('toggle', true)
   },
   cmd: async (cmd) => {
+    if (cmd == 'quit') b.shouldBeRunning = false
     var cmd = new Promise(async function(resolve, reject) {
       exec('./boinccmd ' + ' --' + cmd, { cwd: b.dataDir() }, function(err, stdout, stderr) {
-        cmd.then(console.log)
+        cmd.then()
         if (err) resolve(err)
-        if (stderr) resolve(stderr), console.log(stderr)
+        if (stderr) resolve(stderr)
         // console.log(stdout)
         resolve(stdout)
       })
@@ -304,10 +359,18 @@ var b = {
     }
     if (result) {
       console.log('Found Existing Boinc Process')
-      b.events.emit('toggle', true)
+      if (!b.shouldBeRunning){
+        killExisting()
+      }else if(b.boincD){
+        b.events.emit('toggle', true)
+      }
     } else {
       console.log('There is no Boinc Process running')
-      b.events.emit('toggle', false)
+      if (b.shouldBeRunning){
+        b.start()
+      }else{
+        b.events.emit('toggle', false)
+      }
     }
   }
 }
