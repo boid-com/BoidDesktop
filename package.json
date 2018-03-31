@@ -17,7 +17,7 @@
   "config": {
     "forge": {
       "make_targets": {
-        "win32": ["squirrel,wix"],
+        "win32": ["squirrel","wix"],
         "darwin": ["dmg"],
         "linux": ["deb", "rpm"]
       },
