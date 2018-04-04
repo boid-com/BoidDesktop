@@ -17,9 +17,17 @@
   "config": {
     "forge": {
       "make_targets": {
-        "win32": ["squirrel","wix"],
-        "darwin": ["dmg"],
-        "linux": ["deb", "rpm"]
+        "win32": [
+          "squirrel",
+          "wix"
+        ],
+        "darwin": [
+          "dmg"
+        ],
+        "linux": [
+          "deb",
+          "rpm"
+        ]
       },
       "electronPackagerConfig": {
         "asar": false,

@@ -84,29 +84,31 @@ function setupWindow() {
   if (isDev) appWindow.loadURL(`file://${__dirname}/appwindowDev.html`)
   else appWindow.loadURL(`file://${__dirname}/appwindow.html`)
 
-  auth.events.on('requestLogin', () => {
-    appWindow.webContents.send('requestLogin')
-    appWindow.show()
-  })
+  // auth.events.on('requestLogin', () => {
+  //   console.log('got REQUEST LOGIN')
+  //   appWindow.webContents.send('requestLogin')
+  //   appWindow.show()
+  // })
 
-  appWindow.on('close', () => {
-    console.log('got Close Event')
-    app.dock.hide()
-    appWindow = null
-  })
-  appWindow.on('minimize', () => {
-    console.log('got Minimize Event')
-  })
-  appWindow.on('hide', () => {
-    console.log('got Hide Event')
-  })
-  appWindow.onbeforeunload = (e) => {
-    console.log('I do not want to be closed')
-    e.returnValue = false
-  }
+  // appWindow.on('close', () => {
+  //   console.log('got Close Event')
+  //   app.dock.hide()
+  //   appWindow = null
+  // })
+  // appWindow.on('minimize', () => {
+  //   console.log('got Minimize Event')
+  // })
+  // appWindow.on('hide', () => {
+  //   console.log('got Hide Event')
+  // })
+  // appWindow.onbeforeunload = (e) => {
+  //   console.log('I do not want to be closed')
+  //   e.returnValue = false
+  // }
   appWindow.on('ready-to-show', () => {
+    console.log('app window ready to show')
     appWindow.show()
-    app.dock.show()
+    if (thisPlatform === 'darwin') app.dock.show()
   })
 
   boinc.events.on('showWindow', () => {
@@ -123,15 +125,11 @@ function setupWindow() {
     if (!boinc.device) await boinc.updateClientState().catch(console.log)
     event.returnValue = boinc.device
   })
-  ipcMain.on('localDevice', async (event) => {
-    if (!boinc.device) await boinc.updateClientState().catch(console.log)
-    event.returnValue = boinc.device
-  })
   ipcMain.on('boinc.cmd', (event, data) => {
     boinc.cmd(data)
   })
   ipcMain.on('startBoinc', boinc.start)
-  ipcMain.on('initBoinc', boinc.init)
+  ipcMain.on('initBoinc', ()=>{boinc.start()})
   ipcMain.on('boinc.config.get', boinc.config.get)
   ipcMain.on('boinc.config.set', (event, configData)=>{
     console.log('got ConfigData in Index',configData)
@@ -139,14 +137,10 @@ function setupWindow() {
   })
   ipcMain.on('boinc.activeTasks', async (event) => {
     try {
-      var result = await boinc.activeTasks()
+      boinc.activeTasks()
     } catch (error) {
       console.log(error)
     }
-    // console.log('activeTasksResult', result)
-    if (result) event.returnValue = result
-    else event.returnValue = []
-    //await boinc.activeTasks()
   })
   ipcMain.on('user', auth.parseUserData)
   ipcMain.on('token', auth.saveToken)
@@ -184,13 +178,9 @@ function setupWindow() {
 }
 var init2 = function() {
   console.log(app.getPath('home'))
-  boinc.init()
+  // boinc.init()
 }
 var init = async () => {
-  setInterval(()=>{
-    var metrics = app.getAppMetrics()
-    // console.log(metrics)
-  },5000)
 
   config = require('electron-settings')
   config.set('stayAwake', true)
@@ -210,11 +200,13 @@ var init = async () => {
   }
   setupTray()
   await setupWindow()
-  setTimeout(() => {
-    auth.init()
-  }, 1000)
+  // setTimeout(() => {
+  //   auth.init()
+  // }, 1000)
 }
-app.on('ready', init)
+app.on('ready', ()=>{
+  init()
+})
 
 var cleanUp = function(event) {
   console.log('CLEANUP')
@@ -230,13 +222,14 @@ app.on('window-all-closed', function() {
 })
 process.on('uncaughtException', function(err) {
   console.log('UNCAUCH EXCEPTION', err)
+
   cleanUp()
 })
 
 process.on('unhandledRejection', (r) => {
-  console.log(r)
-  setTimeout(() => {
-    app.relaunch()
-    app.exit()
-  }, 10000)
+  console.log('UNHANDLED REJECTION:',r)
+  // setTimeout(() => {
+  //   app.relaunch()
+  //   app.exit()
+  // }, 10000)
 })
