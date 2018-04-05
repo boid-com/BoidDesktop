@@ -18,8 +18,7 @@
     "forge": {
       "make_targets": {
         "win32": [
-          "squirrel",
-          "wix"
+          "squirrel"
         ],
         "darwin": [
           "dmg"
