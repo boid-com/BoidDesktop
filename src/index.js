@@ -17,6 +17,7 @@ const thisPlatform = os.platform()
 let tray
 var authWindow = null
 fixPath()
+var willQuitApp = false
 app.setName('Boid')
 app.disableHardwareAcceleration()
 protocol.registerStandardSchemes(['boid'])
@@ -84,27 +85,35 @@ function setupWindow() {
   if (isDev) appWindow.loadURL(`file://${__dirname}/appwindowDev.html`)
   else appWindow.loadURL(`file://${__dirname}/appwindow.html`)
 
-  // auth.events.on('requestLogin', () => {
-  //   console.log('got REQUEST LOGIN')
-  //   appWindow.webContents.send('requestLogin')
-  //   appWindow.show()
-  // })
 
-  // appWindow.on('close', () => {
-  //   console.log('got Close Event')
-  //   app.dock.hide()
-  //   appWindow = null
-  // })
-  // appWindow.on('minimize', () => {
-  //   console.log('got Minimize Event')
-  // })
-  // appWindow.on('hide', () => {
-  //   console.log('got Hide Event')
-  // })
-  // appWindow.onbeforeunload = (e) => {
-  //   console.log('I do not want to be closed')
-  //   e.returnValue = false
-  // }
+  appWindow.on('close', (e) => {
+    if (willQuitApp) {
+      appWindow = null;
+    } else {
+      e.preventDefault()
+      appWindow.hide()
+      console.log(thisPlatform)
+      if (thisPlatform == 'darwin') app.dock.hide()
+    }
+  });
+
+  auth.events.on('requestLogin', () => {
+    console.log('got REQUEST LOGIN')
+    appWindow.webContents.send('requestLogin')
+    appWindow.show()
+  })
+  app.on('activate', () => appWindow.show())
+
+  appWindow.on('minimize', () => {
+    console.log('got Minimize Event')
+  })
+  appWindow.on('hide', () => {
+    console.log('got Hide Event')
+  })
+  appWindow.onbeforeunload = (e) => {
+    console.log('I do not want to be closed')
+    e.returnValue = false
+  }
   appWindow.on('ready-to-show', () => {
     console.log('app window ready to show')
     appWindow.show()
@@ -211,6 +220,7 @@ app.on('ready', ()=>{
 
 var cleanUp = function(event) {
   console.log('CLEANUP')
+  willQuitApp = true
   kill(process.pid)
   boinc.killExisting()
 }
