@@ -16,12 +16,12 @@ var auth = {
     } else auth.events.emit('requestLogin')
   },
   parseUserData: async (event, user) => {
-    console.log('received user data', user)
+    // console.log('received user data', user)
   },
   saveToken: async (even, token) => {
-    console.log('received Token Data in Auth', token)
-    config.set('token', token.token)
-    config.set('id', token.id)
+    // console.log('received Token Data in Auth', token)
+    // config.set('token', token.token)
+    // config.set('id', token.id)
   },
   returnToken() {
     console.log('got return token request')

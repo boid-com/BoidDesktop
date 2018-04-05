@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker } from 'electron'
+import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker} from 'electron'
 const os = require('os')
 const isDev = require('electron-is-dev')
 const fixPath = require('fix-path')
@@ -173,6 +173,7 @@ function setupWindow() {
   })
   boinc.events.on('error', (value) => {
     console.log('got error event in index')
+    dialog.showErrorBox('Boid Error',value)
     appWindow.webContents.send('boinc.error', value)
   })
 }
@@ -222,8 +223,8 @@ app.on('window-all-closed', function() {
 })
 process.on('uncaughtException', function(err) {
   console.log('UNCAUCH EXCEPTION', err)
-
-  cleanUp()
+  dialog.showErrorBox('Boid Error',err)
+  // cleanUp()
 })
 
 process.on('unhandledRejection', (r) => {
