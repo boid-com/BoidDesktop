@@ -12,7 +12,7 @@ var config = null
 // require('electron-debug')({
 //   showDevTools: true
 // })
-if (require('electron-squirrel-startup')) app.quit()
+if (require('./squirrelHandler')) app.quit()
 const thisPlatform = os.platform()
 let tray
 var authWindow = null
@@ -28,6 +28,20 @@ if (thisPlatform === 'win32') {
 } else if (thisPlatform === 'darwin') {
   // app.dock.hide()
   console.log('found MacOS platform')
+}
+
+const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
+  if (appWindow) {
+      appWindow.restore()
+      appWindow.show() 
+      appWindow.focus()
+  }
+  // console.log('make single ins')
+
+})
+
+if (isSecondInstance) {
+  app.quit()
 }
 
 var powerBlocker
@@ -221,7 +235,7 @@ app.on('ready', ()=>{
 var cleanUp = function(event) {
   console.log('CLEANUP')
   willQuitApp = true
-  kill(process.pid)
+  // kill(process.pid)
   boinc.killExisting()
 }
 
