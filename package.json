@@ -6,8 +6,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "build": "electron-forge package && xattr -cr * && electron-osx-sign out/Boid-darwin-x64/Boid.app/",
+    "pack": "electron-forge make --skip-package",
     "publish": "electron-forge publish",
     "lint": "eslint src --color"
   },
@@ -21,7 +21,7 @@
           "squirrel"
         ],
         "darwin": [
-          "dmg"
+          "zip"
         ],
         "linux": [
           "deb",
@@ -32,7 +32,10 @@
         "asar": false,
         "icon": "./logo",
         "packageManager": "npm",
-        "name": "<%= productName %>"
+        "name": "<%= productName %>",
+        "appCopyright": "Boid Inc.",
+        "appBundleId": "com.boid.macos",
+        "osxSign": true
       },
       "electronWinstallerConfig": {
         "name": "electroboid"
@@ -71,7 +74,7 @@
     "babel-plugin-transform-async-to-generator": "^6.24.1",
     "babel-preset-env": "^1.6.1",
     "babel-preset-react": "^6.24.1",
-    "electron-forge": "^4.2.0",
+    "electron-forge": "^5.2.2",
     "electron-prebuilt-compile": "1.8.2-beta.3",
     "eslint": "^3.19.0",
     "eslint-config-airbnb": "^15.1.0",

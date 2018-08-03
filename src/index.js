@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker} from 'electron'
+import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker,shell} from 'electron'
 const os = require('os')
 const isDev = require('electron-is-dev')
 const fixPath = require('fix-path')
@@ -62,15 +62,9 @@ function setupTray() {
       }
     },
     {
-      label: 'quit',
+      label: 'close',
       click() {
         app.quit()
-      }
-    },
-    {
-      label: 'Stop Boinc',
-      click() {
-        boinc.cmd('quit')
       }
     }
   ])
@@ -88,8 +82,8 @@ function setupTray() {
 
 function setupWindow() {
   appWindow = new BrowserWindow({
-    width: 440,
-    height: 520,
+    width: 430,
+    height: 590,
     show: false,
     resizable: false,
     maximizable: false,
@@ -152,6 +146,9 @@ function setupWindow() {
     boinc.cmd(data)
   })
   ipcMain.on('startBoinc', boinc.start)
+  ipcMain.on('openURL', (event,url)=>{
+    return shell.openExternal(url)
+  })
   ipcMain.on('initBoinc', ()=>{boinc.start()})
   ipcMain.on('boinc.config.get', boinc.config.get)
   ipcMain.on('boinc.config.set', (event, configData)=>{

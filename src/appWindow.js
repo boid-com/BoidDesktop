@@ -3,7 +3,7 @@ var { ipcRenderer, remote } = require('electron')
 const isDev = require('electron-is-dev')
 var auth = require('./auth')
 setTimeout(() => {
-  window.scrollTo(10, 10)
+  window.scrollTo(8, 10)
 }, 100)
 webview.addEventListener('dom-ready', () => {
   if (isDev) {
