@@ -51,7 +51,7 @@ function setupTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Open Window',
+      label: 'Open Boid',
       click() {
         if (appWindow) {
           console.log('found exisiting appWindow')
@@ -62,9 +62,13 @@ function setupTray() {
       }
     },
     {
-      label: 'close',
+      label: 'Exit Boid',
       click() {
-        app.quit()
+        boinc.cmd('quit')
+        appWindow.hide()
+        setTimeout(()=>{
+          app.quit()
+        },5000)
       }
     }
   ])

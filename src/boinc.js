@@ -173,7 +173,7 @@ var parseClientState = async (state) => {
 
 var killExisting = async () => {
   try {
-    // if (b.boincD) boinc.cmd('quit')
+    if (b.boincD) boinc.cmd('quit')
     // else {
       if (thisPlatform === 'win32') await execP('Taskkill /IM boinc.exe /F')
       else await execP('pkill -9 boinc')

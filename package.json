@@ -39,7 +39,10 @@
         "osxSign": true
       },
       "electronWinstallerConfig": {
-        "name": "electroboid"
+        "name": "electroboid",
+        "signWithParams": "/tr http://timestamp.comodoca.com /td sha256 /fd sha256 /a",
+        "iconUrl":"https://assets.boid.com/images/logo.ico",
+        "setupIcon":"./logo.ico"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
@@ -73,7 +76,7 @@
   },
   "devDependencies": {
     "babel-plugin-transform-async-to-generator": "^6.24.1",
-    "babel-preset-env": "^1.6.1",
+    "babel-preset-env": "^1.7.0",
     "babel-preset-react": "^6.24.1",
     "electron-forge": "^5.2.2",
     "electron-prebuilt-compile": "1.8.2-beta.3",
