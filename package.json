@@ -42,7 +42,8 @@
         "name": "electroboid",
         "signWithParams": "/tr http://timestamp.comodoca.com /td sha256 /fd sha256 /a",
         "iconUrl":"https://assets.boid.com/images/logo.ico",
-        "setupIcon":"./logo.ico"
+        "setupIcon":"./logo.ico",
+        "loadingGif":"./loading.gif"
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
