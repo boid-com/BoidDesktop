@@ -1,7 +1,7 @@
 {
   "name": "boiddesktop",
   "productName": "Boid",
-  "version": "0.0.02",
+  "version": "0.0.03",
   "description": "Desktop Application for the Boid platform",
   "main": "src/index.js",
   "scripts": {
@@ -41,9 +41,14 @@
       "electronWinstallerConfig": {
         "name": "electroboid",
         "signWithParams": "/tr http://timestamp.comodoca.com /td sha256 /fd sha256 /a",
+<<<<<<< HEAD
         "iconUrl":"https://assets.boid.com/images/logo.ico",
         "setupIcon":"./logo.ico",
         "loadingGif":"./loading.gif"
+=======
+        "iconUrl": "https://assets.boid.com/images/logo.ico",
+        "setupIcon": "./logo.ico"
+>>>>>>> b4db584619aab0be30a9f75d7faff8db55170e66
       },
       "electronInstallerDebian": {},
       "electronInstallerRedhat": {},
@@ -66,6 +71,7 @@
     "electron-settings": "^3.1.4",
     "electron-squirrel-startup": "^1.0.0",
     "electron-sudo": "^4.0.12",
+    "electron-unhandled": "^1.1.0",
     "first-run": "^1.2.0",
     "fix-path": "^2.1.0",
     "fs-extra": "^5.0.0",

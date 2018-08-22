@@ -1,22 +1,29 @@
 const webview = document.querySelector('webview')
+const msg = document.getElementById('loadingmsg')
 var { ipcRenderer, remote } = require('electron')
+// const unhandled = require('electron-unhandled');
+// unhandled()
 const isDev = require('electron-is-dev')
 var auth = require('./auth')
+var reloadInterval = null
 setTimeout(() => {
   window.scrollTo(8, 10)
 }, 100)
-webview.addEventListener('dom-ready', () => {
-  if (isDev) {
-    webview.openDevTools()
-  }
-  webview.setZoomLevel(0)
+console.log('appWindow loaded')
+var initial = true
 
+webview.addEventListener('dom-ready', () => {
+  if (isDev) webview.openDevTools()
+  ipcRenderer.send('getDevice')
+  if (!initial) return 
+  initial = false
+  webview.setZoomLevel(0)
+  
   ipcRenderer.on('requestLogin', () => {
     console.log('got login auth request')
   })
 
   ipcRenderer.on('deviceReady', (event, device) => {
-    console.log('got DeviceReady Event from main')
     webview.send('deviceReadyAuth', device)
   })
   ipcRenderer.on('user', (event, user) => {
@@ -24,7 +31,6 @@ webview.addEventListener('dom-ready', () => {
   })
 
   ipcRenderer.on('boinc.toggle', (event, toggle) => {
-    console.log('GOT TOGGLE EVENT', toggle)
     webview.send('boinc.toggle', toggle)
   })
 
@@ -33,6 +39,9 @@ webview.addEventListener('dom-ready', () => {
   })
   ipcRenderer.on('boinc.config', (event, value) => {
     webview.send('boinc.config', value)
+  })
+  ipcRenderer.on('boinc.error', (event, value) => {
+    webview.send('boinc.error', value)
   })
 
   ipcRenderer.on('boinc.activeTasks', (event, tasks) => {
@@ -49,12 +58,19 @@ webview.addEventListener('dom-ready', () => {
       console.log('got getTokenSync request')
     }
   })
-
-  webview.addEventListener('dom-ready', () => {
-    console.log('dom ready')
-    ipcRenderer.send('getDevice')
+  webview.addEventListener('did-fail-load',(e,string)=>{
+    console.log('Failed to load')
+    msg.style.display = "block"
+    setTimeout(()=>{
+      webview.reload()  
+    },3000)
+    
   })
-  webview.addEventListener('console-message', (e) => {
-    console.log('FROM WEBVIEW', e.message)
+  webview.addEventListener('page-title-updated',(e)=>{
+    if (reloadInterval) clearInterval(reloadInterval)
+    msg.style.display = "none"
+    console.log(e)
   })
+  if (isDev) webview.loadURL('http://localhost:8080/device')
+  else webview.loadURL('https://app.boid.com/device')
 })
