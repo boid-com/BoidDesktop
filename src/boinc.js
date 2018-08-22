@@ -35,6 +35,11 @@ var RESOURCEDIR = path.join(__dirname, '../')
 var global_preferences = {run_if_user_active:'1',cpu_usage_limit:'80.0',max_ncpus_pct:'100',idle_time_to_run:'3.0',ram_max_used_busy_pct:'50.0',ram_max_used_idle_pct:'75.0'}
 console.log('BOINCPATH:', BOINCPATHRAW)
 
+function ec(err){ //Error Catcher
+  console.error(err)
+  b.events.emit('error',err)
+}
+
 var spawnConfig = {
   cwd: BOINCPATH,
   name: 'Boid Secure Sandbox'
@@ -53,8 +58,8 @@ function setupBoincDListeners() {
     } else if (data.indexOf('This computer is not') > -1) {
       needsProject = true
     } else if (data.indexOf('File ownership or permissions are set') > -1) {
-      console.log('permissions are not set correctly')
       b.cmd('stop')
+      ec('Permissions are not set correctly')
       setTimeout(() => {
         b.init(true)
       }, 2000)
@@ -72,7 +77,7 @@ function setupBoincDListeners() {
     
   })
   b.boincD.stderr.on('data', (data) => {
-    console.log(`boincDErr: ${data}`)
+    ec(data)
   })
 
   b.boincD.on('close', (code) => {
@@ -95,40 +100,40 @@ async function clearLocks() {
       console.log(result)
     })
   } catch (err) {
-    console.log('SLOTS ERR', err)
+    // ec(err,false)
+    console.error('SLOTS ERR', err)
   }
 }
 var addUserProject = async () => {
-  console.log("ADDING USER PROKECT")
+  console.log("ADDING USER PROJECT")
   var userProjectURL = 'http://www.worldcommunitygrid.org/'
   var addProject = 'project_attach ' + userProjectURL + ' ' + weakKey
   b.cmd(addProject)
 }
 
 var boincDInitialized = async () => {
-  console.log("BOINC IS INITALIZEDDLDLKDF")
-  if (needsProject) await addUserProject().catch(console.log)
-  var clientState = await updateClientState().catch(console.log)
+  console.log("BOINC IS INITALIZED")
+  if (needsProject) await addUserProject().catch(ec)
+  await updateClientState().catch(ec)
   console.log('cpid', b.device)
 }
 
 var updateClientState = async () => {
-  var exists = await fs.exists(path.join(b.dataDir(), './client_state.xml')).catch(console.log)
+  var exists = await fs.exists(path.join(b.dataDir(), './client_state.xml')).catch(ec)
   if (!exists) return null
   else
     try {
       var stateXML = await fs.readFile(path.join(b.dataDir(), 'client_state.xml'))
     } catch (err) {
-      console.log(err)
+      ec(err)
       var stateXML = null
     } finally {
       return new Promise(async function(resolve, reject) {
-        // console.log('we are here')
         parser.parseString(stateXML, async function(err, result) {
           if (err) reject(err)
           else {
             if (result) {
-              await parseClientState(result.client_state)
+              await parseClientState(result.client_state).catch(ec)
               resolve(result.client_state)
             } else resolve(null)
           }
@@ -153,7 +158,6 @@ var parseClientState = async (state) => {
       attachingProject = true
       addUserProject()
     }
-    // console.log('lul')
   }
   b.device = {
     wcgid,
@@ -215,15 +219,15 @@ var b = {
   updateClientState,
   killExisting,
   delete: async () => {
-    await fs.remove(BOINCPATH).catch(console.log)
+    await fs.remove(BOINCPATH).catch(ec)
     console.log('DELETED BOINC DIR')
   },
   config:{
     init:async()=>{
       console.log('start config.init')
-      var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(console.log)
+      var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(ec)
       if (!result) return null
-      b.config.get()
+      b.config.get().catch(ec)
       console.log('CONFIG INIT:',result)
     },
     get:async(once)=>{
@@ -237,7 +241,7 @@ var b = {
       }
       if(!prefsXml) return null
         configParser.parseString(prefsXml, async function(err, result) {
-          if (err) return console.log(err)
+          if (err) return ec(err)
           else {
             if (result) {
               var preferences = result.global_preferences
@@ -253,11 +257,11 @@ var b = {
           }
         })
     },
-    set:async(global_preferences)=>{
+    set: async(global_preferences)=>{
       console.log('got configData in BOINC!!!')
-      var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(console.log)
+      var result = await fs.writeFile(b.globalPrefs(),builder.buildObject({global_preferences})).catch(ec)
       await b.cmd('read_global_prefs_override')
-      b.config.get()
+      b.config.get().catch(ec)
     }
   },
   unzip: async () => {
@@ -265,7 +269,7 @@ var b = {
     return new Promise((resolve, reject) => {
       console.log('STARTING TO UNZIP')
       unzipper.on('error', function(err) {
-        console.log('Caught an error', err)
+        console.error('Caught an error', err)
         reject(err)
       })
 
@@ -275,7 +279,7 @@ var b = {
       })
 
       unzipper.on('progress', function(fileIndex, fileCount) {
-        // console.log('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
+        console.log('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
       })
 
       unzipper.extract({
@@ -289,21 +293,22 @@ var b = {
   sandbox: async () => {
     if (thisPlatform === 'win32'){
       console.log('Starting Unzip from Sandbox')
-      await b.unzip()
+      await b.unzip().catch(ec)
     } else
     return new Promise((resolve, reject) => {
       try{
         fs.ensureDirSync(BOINCPATH)
       }catch(err){
+        ec(err)
         console.error(err)
       }
       var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH
-      var cmd2 = 'sh ' + path.join(RESOURCEDIR, 'BoidSandbox.sh') + ' ' + BOINCPATH
+      var cmd2 = 'sh ' + path.join(RESOURCEDIR, 'boidSandbox.sh') + ' ' + BOINCPATH
       var cmd = 'sh -c "'+ cmd1 + '; ' + cmd2 + '"'
       console.log(cmd)
 
       sudo.exec(cmd, spawnConfig, function(err, stdout, stderr) {
-        if (err) reject(err),console.log(err),b.events.emit('error',error)
+        if (err) reject(err)
         if (stdout) {
           console.log(stdout)
           if (stdout.indexOf('Changed directory') > -1) {
@@ -322,15 +327,15 @@ var b = {
   },
   install: async () => {
     try {
-      await b.delete()
+      await b.delete().catch(ec)
       console.log('BOINC INSTALL')
       // await b.unzip()
       console.log('FINISHED UNZIPING')
-      await b.sandbox()
+      await b.sandbox().catch(ec)
       console.log('FINISHED Sandbox')
       console.log(BOINCPATH)
     } catch (err) {
-      console.log(err)
+      ec(err)
     }
   },
   init: async (force) => {
@@ -338,7 +343,7 @@ var b = {
     console.log('Starting Init with override:',force)
     await killExisting()
     await clearLocks()
-    await fs.outputFile(path.join(b.dataDir(), 'remote_hosts.cfg'), 'localhost').catch(console.log)
+    await fs.outputFile(path.join(b.dataDir(), 'remote_hosts.cfg'), 'localhost').catch(ec)
     try {
       var exists = await fs.exists(path.join(BOINCPATHRAW, 'ca-bundle.crt'))
       console.log("EXISTS?",exists,!force)
@@ -346,28 +351,25 @@ var b = {
       else {
         if (b.initializing) return console.log('already initializing...')
         b.initializing = true
-        await b.sandbox()
-        await b.config.init()
+        await b.sandbox().catch(ec)
+        await b.config.init().catch(ec)
         return console.log('finished with config init')
-        await b.start()
+        await b.start().catch(ec)
         return new Promise((resolve, reject) => {
           console.log('boinc initialized')
           resolve()
         })
       }
     } catch (err) {
-      console.log('there was an error', err)
-      b.events.emit('error', err)
+      ec(err)
     }
   },
   start: async () => {
     b.shouldBeRunning = true
     if (b.initializing) return console.log('boincD is already initializing')
    
-    var result = await b.init(false)
-    console.log(result)
-    console.log('finished Init:')
-    // return console.log('return here')
+    var result = await b.init(false).catch(ec)
+    if (!result) console.error('Init broke')
     console.log('starting BOINC')
     if (b.boincD) return console.log('boincD is already running')
     var exe
@@ -377,12 +379,12 @@ var b = {
       b.boincD = spawn(exe, ['-dir', BOINCPATHRAW, '-allow_multiple_clients', '-no_gpus','-allow_remote_gui_rpc'], {
         silent: false,
         cwd: BOINCPATHRAW,
-        shell: true,
+        shell: false,
         detached: false,
         env: null
       })
     } catch (error) {
-      console.log(error)
+      ec(error)
     }
     setupBoincDListeners()
     b.events.emit('toggle', true)
@@ -391,16 +393,15 @@ var b = {
     // console.log('GOT CMD:',cmd)
     // console.log('SHOULD BE RUNNING?',b.shouldBeRunning)
     if (!b.shouldBeRunning) return null
-    var pass = await fs.readFile(path.join(b.dataDir(), 'gui_rpc_auth.cfg'), 'utf8').catch(console.log)
-    var exe 
-    if (thisPlatform == "win32") exe = 'boinccmd'
-    else {exe = './boinccmd'}
+    var pass = await fs.readFile(path.join(b.dataDir(), 'gui_rpc_auth.cfg'), 'utf8').catch(ec)
+    var exe = "dope"
+    if (thisPlatform === "win32") exe = 'boinccmd'
+    else exe = './boinccmd'
     if (cmd == 'quit') b.shouldBeRunning = false
-    return new Promise(async function(resolve, reject) {
+    return new Promise(function(resolve, reject) {
       exec(exe + ` --host localhost --passwd ` + pass + ' --' + cmd, { cwd: b.dataDir() }, function(err, stdout, stderr) {
-        // cmd.then()
-        if (err) console.log(err),resolve(err)
-        if (stderr) console.log(stderr),resolve(stderr)
+        if (err) console.error(err),resolve(err)
+        if (stderr) console.error(stderr),resolve(stderr)
         if (stdout) console.log(stdout)
         resolve(stdout)
       })

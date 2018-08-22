@@ -5,14 +5,17 @@ const fixPath = require('fix-path')
 const exec = require('child_process').exec
 const auth = require('./auth')
 const kill = require('tree-kill')
+const unhandled = require('electron-unhandled')
+unhandled()
 import firstRun from 'first-run'
 import path from 'path'
 import boinc from './boinc'
 var config = null
-// require('electron-debug')({
-//   showDevTools: true
-// })
+require('electron-debug')({
+  showDevTools: true
+})
 if (require('./squirrelHandler')) app.quit()
+
 const thisPlatform = os.platform()
 let tray
 var authWindow = null
@@ -110,8 +113,7 @@ function setupWindow() {
     fullscreenable: false,
     title: 'Boid Desktop'
   })
-  if (isDev) appWindow.loadURL(`file://${__dirname}/appwindowDev.html`)
-  else appWindow.loadURL(`file://${__dirname}/appwindow.html`)
+  appWindow.loadURL(`file://${__dirname}/appwindow.html`)
 
 
   appWindow.on('close', (e) => {
@@ -145,6 +147,7 @@ function setupWindow() {
   appWindow.on('ready-to-show', () => {
     console.log('app window ready to show')
     appWindow.show()
+    // if (isDev) appWindow.showDevTools()
     if (thisPlatform === 'darwin') app.dock.show()
   })
 
@@ -211,9 +214,11 @@ function setupWindow() {
     console.log('got suspended event in index')
     appWindow.webContents.send('boinc.suspended', value)
   })
-  boinc.events.on('error', (value) => {
-    console.log('got error event in index')
-    dialog.showErrorBox('Boid Error',value)
+  boinc.events.on('error', (value, other) => {
+    console.log('got BOINC error event in index')
+    console.log(value.toString())
+    console.log(other)
+    // dialog.showErrorBox('Boid Error',value)
     appWindow.webContents.send('boinc.error', value)
   })
 }
