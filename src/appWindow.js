@@ -60,13 +60,13 @@ webview.addEventListener('dom-ready', () => {
   })
   webview.addEventListener('did-fail-load',(e,string)=>{
     console.log('Failed to load')
-    console.log(string)
-    msg.style.display = "inline"
-    reloadInterval = setInterval(()=>{
-      webview.reload()
+    msg.style.display = "block"
+    setTimeout(()=>{
+      webview.reload()  
     },3000)
+    
   })
-  webview.addEventListener('did-finish-load',(e)=>{
+  webview.addEventListener('page-title-updated',(e)=>{
     if (reloadInterval) clearInterval(reloadInterval)
     msg.style.display = "none"
     console.log(e)
