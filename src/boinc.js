@@ -292,8 +292,11 @@ var b = {
       await b.unzip()
     } else
     return new Promise((resolve, reject) => {
-      fs.ensureDirSync(BOINCPATH)
-
+      try{
+        fs.ensureDirSync(BOINCPATH)
+      }catch(err){
+        console.error(err)
+      }
       var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH
       var cmd2 = 'sh ' + path.join(RESOURCEDIR, 'BoidSandbox.sh') + ' ' + BOINCPATH
       var cmd = 'sh -c "'+ cmd1 + '; ' + cmd2 + '"'
