@@ -292,13 +292,16 @@ var b = {
       await b.unzip()
     } else
     return new Promise((resolve, reject) => {
-
-      fs.ensureDirSync(BOINCPATH)
-
-
-      var cmd = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH + ' && ' + 'sh ' + path.join(RESOURCEDIR, 'BoidSandbox.sh') + ' ' + BOINCPATH
-      // cmd = cmd.replace(' ', '\\ ')
+      try{
+        fs.ensureDirSync(BOINCPATH)
+      }catch(err){
+        console.error(err)
+      }
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH
+      var cmd2 = 'sh ' + path.join(RESOURCEDIR, 'BoidSandbox.sh') + ' ' + BOINCPATH
+      var cmd = 'sh -c "'+ cmd1 + '; ' + cmd2 + '"'
       console.log(cmd)
+
       sudo.exec(cmd, spawnConfig, function(err, stdout, stderr) {
         if (err) reject(err),console.log(err),b.events.emit('error',error)
         if (stdout) {
