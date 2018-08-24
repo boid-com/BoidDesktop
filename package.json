@@ -1,0 +1,92 @@
+{
+  "name": "boiddesktop",
+  "productName": "Boid",
+  "version": "0.0.03",
+  "description": "Desktop Application for the Boid platform",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "build": "electron-forge package && xattr -cr * && electron-osx-sign out/Boid-darwin-x64/Boid.app/",
+    "pack": "electron-forge make --skip-package",
+    "publish": "electron-forge publish",
+    "lint": "eslint src --color"
+  },
+  "keywords": [],
+  "author": "boid",
+  "license": "MIT",
+  "config": {
+    "forge": {
+      "make_targets": {
+        "win32": [
+          "squirrel"
+        ],
+        "darwin": [
+          "zip",
+          "dmg"
+        ],
+        "linux": [
+          "deb",
+          "rpm"
+        ]
+      },
+      "electronPackagerConfig": {
+        "asar": false,
+        "icon": "./logo",
+        "packageManager": "npm",
+        "name": "<%= productName %>",
+        "appCopyright": "Boid Inc.",
+        "appBundleId": "com.boid.macos",
+        "osxSign": true
+      },
+      "electronWinstallerConfig": {
+        "name": "electroboid",
+        "signWithParams": "/tr http://timestamp.comodoca.com /td sha256 /fd sha256 /a",
+        "iconUrl": "https://assets.boid.com/images/logo.ico",
+        "setupIcon": "./logo.ico"
+      },
+      "electronInstallerDebian": {},
+      "electronInstallerRedhat": {},
+      "github_repository": {
+        "owner": "",
+        "name": ""
+      },
+      "windowsStoreConfig": {
+        "packageName": "",
+        "name": "electroboid"
+      }
+    }
+  },
+  "dependencies": {
+    "child-process-promise": "^2.2.1",
+    "decompress-zip": "^0.3.0",
+    "electron-compile": "^6.4.2",
+    "electron-debug": "^1.5.0",
+    "electron-is-dev": "^0.3.0",
+    "electron-settings": "^3.1.4",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-sudo": "^4.0.12",
+    "electron-unhandled": "^1.1.0",
+    "first-run": "^1.2.0",
+    "fix-path": "^2.1.0",
+    "fs-extra": "^5.0.0",
+    "graphql-request": "^1.4.1",
+    "node-zip": "^1.1.1",
+    "sudo-prompt": "^8.1.0",
+    "tree-kill": "^1.2.0",
+    "xml2js": "^0.4.19"
+  },
+  "devDependencies": {
+    "babel-plugin-transform-async-to-generator": "^6.24.1",
+    "babel-preset-env": "^1.7.0",
+    "babel-preset-react": "^6.24.1",
+    "electron-forge": "^5.2.2",
+    "electron-prebuilt-compile": "1.8.2-beta.3",
+    "eslint": "^3.19.0",
+    "eslint-config-airbnb": "^15.1.0",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "eslint-plugin-prettier": "^2.5.0",
+    "eslint-plugin-react": "^7.5.1"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules
+out
+/src/BOINC
+.DS_Store
+src/.DS_Store
