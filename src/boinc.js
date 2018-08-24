@@ -156,7 +156,7 @@ var parseClientState = async (state) => {
     needsProject = true
     if (!attachingProject){
       attachingProject = true
-      addUserProject()
+      addUserProject().catch(ec)
     }
   }
   b.device = {
@@ -234,7 +234,7 @@ var b = {
       // console.log('start config.get')
       // var configXML = await fs.readFile(path.join(b.dataDir(), 'cc_config.xml'))
       try {
-        var prefsXml = await fs.readFile(b.globalPrefs()) 
+        var prefsXml = await fs.readFile(b.globalPrefs())
       } catch (error) {
         // console.log('PREFSXML:',prefsXml)
         // console.log(error)
