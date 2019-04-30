@@ -87,22 +87,23 @@ function setupBoincDListeners() {
   })
 }
 async function clearLocks() {
-  if (b.initializing) return
-  var slots = path.join(BOINCPATH, 'slots')
-  try {
-    var folders = await fs.readdir(slots)
-    folders = folders.filter((el) => {
-      return el != '.DS_Store'
-    })
-    folders.forEach(async (el) => {
-      console.log(path.join(BOINCPATH, 'slots', el, 'boinc_lockfile'))
-      var result = await fs.remove(path.join(slots, el, 'boinc_lockfile')).catch(console.log)
-      console.log(result)
-    })
-  } catch (err) {
-    // ec(err,false)
-    console.error('SLOTS ERR', err)
-  }
+  return
+  // if (b.initializing) return
+  // var slots = path.join(BOINCPATH, 'slots')
+  // try {
+  //   var folders = await fs.readdir(slots)
+  //   folders = folders.filter((el) => {
+  //     return el != '.DS_Store'
+  //   })
+  //   folders.forEach(async (el) => {
+  //     console.log(path.join(BOINCPATH, 'slots', el, 'boinc_lockfile'))
+  //     var result = await fs.remove(path.join(slots, el, 'boinc_lockfile')).catch(console.log)
+  //     console.log(result)
+  //   })
+  // } catch (err) {
+  //   // ec(err,false)
+  //   console.error('SLOTS ERR', err)
+  // }
 }
 var addUserProject = async () => {
   console.log("ADDING USER PROJECT")
@@ -302,9 +303,10 @@ var b = {
         ec(err)
         console.error(err)
       }
-      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' -d ' + BOINCPATH
-      var cmd2 = 'sh ' + path.join(RESOURCEDIR, 'boidSandbox.sh') + ' ' + BOINCPATH
-      var cmd = 'sh -c "'+ cmd1 + '; ' + cmd2 + '"'
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' ' + BOINCPATH
+      var cmd2 = 'cd ' + BOINCPATH
+      var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
+      var cmd = 'sh -c "' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + '"'
       console.log(cmd)
 
       sudo.exec(cmd, spawnConfig, function(err, stdout, stderr) {

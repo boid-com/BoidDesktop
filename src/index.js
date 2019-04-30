@@ -50,7 +50,7 @@ if (isSecondInstance) {
 var powerBlocker
 
 function setupTray() {
-  tray = new Tray(path.join(__dirname, 'img', 'trayIcon.png'))
+  tray = new Tray(path.join(__dirname, 'img', 'trayicon.png'))
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -105,8 +105,8 @@ function setupTray() {
 
 function setupWindow() {
   appWindow = new BrowserWindow({
-    width: 430,
-    height: 590,
+    width: 900,
+    height: 700,
     show: false,
     resizable: false,
     maximizable: false,

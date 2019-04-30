@@ -6,9 +6,9 @@ var { ipcRenderer, remote } = require('electron')
 const isDev = require('electron-is-dev')
 var auth = require('./auth')
 var reloadInterval = null
-setTimeout(() => {
-  window.scrollTo(8, 10)
-}, 100)
+// setTimeout(() => {
+//   window.scrollTo(8, 10)
+// }, 100)
 console.log('appWindow loaded')
 var initial = true
 
