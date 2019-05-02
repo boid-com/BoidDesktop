@@ -6,13 +6,14 @@ const exec = require('child_process').exec
 const auth = require('./auth')
 const kill = require('tree-kill')
 const unhandled = require('electron-unhandled')
+const gpu = require('./gpu')
 unhandled()
 import firstRun from 'first-run'
 import path from 'path'
 import boinc from './boinc'
 var config = null
 require('electron-debug')({
-  showDevTools: true
+  // showDevTools: true
 })
 if (require('./squirrelHandler')) app.quit()
 
@@ -147,9 +148,13 @@ function setupWindow() {
   appWindow.on('ready-to-show', () => {
     console.log('app window ready to show')
     appWindow.show()
-    appWindow.setSize(450,620)
-    appWindow.center()
+    if (thisPlatform === 'darwin') appWindow.setSize(450, 620)
+    else appWindow.setSize(470, 630)
+    appWindow.setAutoHideMenuBar(true)
 
+    appWindow.center()
+    gpu.init(appWindow)
+    gpu.emit('helloWorld')
     // if (isDev) appWindow.showDevTools()
     if (thisPlatform === 'darwin') app.dock.show()
   })
