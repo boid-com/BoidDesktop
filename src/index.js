@@ -105,8 +105,8 @@ function setupTray() {
 
 function setupWindow() {
   appWindow = new BrowserWindow({
-    width: 900,
-    height: 700,
+    width: 450,
+    height: 600,
     show: false,
     resizable: false,
     maximizable: false,
@@ -147,6 +147,9 @@ function setupWindow() {
   appWindow.on('ready-to-show', () => {
     console.log('app window ready to show')
     appWindow.show()
+    appWindow.setSize(450,620)
+    appWindow.center()
+
     // if (isDev) appWindow.showDevTools()
     if (thisPlatform === 'darwin') app.dock.show()
   })
@@ -246,6 +249,7 @@ var init = async () => {
   }
   setupTray()
   await setupWindow()
+
   // setTimeout(() => {
   //   auth.init()
   // }, 1000)

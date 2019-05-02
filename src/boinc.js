@@ -83,6 +83,8 @@ function setupBoincDListeners() {
   b.boincD.on('close', (code) => {
     console.log(`boincD exited with code ${code}`)
     b.boincD = null
+    console.log('shouldberunning?', b.shouldBeRunning)
+    if (b.shouldBeRunning) b.start()
     // b.checkExisting()
   })
 }
@@ -303,17 +305,18 @@ var b = {
         ec(err)
         console.error(err)
       }
-      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC-Darwin.zip') + ' ' + BOINCPATH
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC.zip') + ' -d ' + HOMEPATH
       var cmd2 = 'cd ' + BOINCPATH
       var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
-      var cmd = 'sh -c "' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + '"'
+      var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
+      var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
+      var cmd = 'sh -c "' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done'+'"'
       console.log(cmd)
-
       sudo.exec(cmd, spawnConfig, function(err, stdout, stderr) {
         if (err) reject(err)
         if (stdout) {
           console.log(stdout)
-          if (stdout.indexOf('Changed directory') > -1) {
+          if (stdout.indexOf('done') > -1) {
             console.log('SANDBOX FINISHED')
             b.intializing = false
             resolve(stdout)
