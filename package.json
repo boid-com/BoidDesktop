@@ -58,6 +58,7 @@
     }
   },
   "dependencies": {
+    "axios": "^0.18.0",
     "child-process-promise": "^2.2.1",
     "decompress-zip": "^0.3.0",
     "electron": "^5.0.0",
