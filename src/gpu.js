@@ -19,7 +19,7 @@ if (isDev) var HOMEPATHRAW = path.join(app.getPath('home'), '.BoidDev')
 else var HOMEPATHRAW = path.join(app.getPath('home'), '.Boid')
 var GPUPATH = path.join(HOMEPATHRAW, 'GPU')
 var RESOURCEDIR = path.join(__dirname, '../')
-const TREXPATH = path.join(GPUPATH, 'TREX')
+const TREXPATH = path.join(GPUPATH, 'trex')
 
 
 var gpu = {
