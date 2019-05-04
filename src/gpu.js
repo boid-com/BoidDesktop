@@ -8,7 +8,7 @@ var path = require('path')
 require('fix-path')()
 const spawn = require('child_process').spawn
 const ax = require('axios')
-
+const parseXML = require('xml-to-json-promise').xmlFileToJSON
 const { exec } = require('child-process-promise')
 import { app } from 'electron'
 
@@ -52,9 +52,10 @@ var gpu = {
   async getGPU() {
     console.log('getGPU', thisPlatform)
     if (thisPlatform === 'win32') {
-      const gpu = (await exec('wmic path win32_VideoController get name')).stdout
-      console.log(gpu)
-      return gpu
+      await exec('dxdiag /x dxdiag.xml',{ cwd: GPUPATH, timeout:3}).catch(()=>{})
+      const displayDevices = (await parseXML(path.join(GPUPATH,'dxdiag.xml'))).DxDiag.DisplayDevices
+      console.log(displayDevices)
+      return displayDevices
     } else return 'test GPU'
   },
   async unzip(zipFile, desination) {
@@ -149,8 +150,10 @@ var gpu = {
     },
     async getStats(){
       try {
+        console.log('get stats')
         const stats = (await ax.get('http://127.0.0.1:4067/summary')).data
         if (stats) { gpu.emit('trex.getStats',stats) }
+        else gpu.emit('error', 'Error getting t-rex miner stats')
       } catch (error) {
         gpu.emit('error',error)
       }
