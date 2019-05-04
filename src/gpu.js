@@ -6,9 +6,10 @@ var fs = require('fs-extra')
 const isDev = require('electron-is-dev')
 var path = require('path')
 require('fix-path')()
+const spawn = require('child_process').spawn
+const ax = require('axios')
 
-
-const { exec, spawn } = require('child-process-promise')
+const { exec } = require('child-process-promise')
 import { app } from 'electron'
 
 function dir(dir) {
@@ -40,11 +41,13 @@ var gpu = {
       event.sender.send('gpu.getGPU', result)
     })
 
-    ipcMain.on('gpu.startTrex', async (event, arg) => {
+    ipcMain.on('gpu.trex.start', async (event, arg) => {
       gpu.window = event.sender
       event.sender.send('gpu.status', 'Checking Miner Install')
-      const status = await gpu.startTrex()
+      const status = await gpu.trex.start()
     })
+    ipcMain.on('gpu.trex.stop', async (event, arg) => gpu.trex.stop())
+    ipcMain.on('gpu.trex.getStats',async (event,arg)=> gpu.trex.getStats())
   },
   async getGPU() {
     console.log('getGPU', thisPlatform)
@@ -54,62 +57,106 @@ var gpu = {
       return gpu
     } else return 'test GPU'
   },
-  async unzip(zipFile,desination){
+  async unzip(zipFile, desination) {
     var unzipper = new unzip(zipFile)
     return new Promise((resolve, reject) => {
       console.log('STARTING TO UNZIP')
-      unzipper.on('error', function(err) {
+      unzipper.on('error', function (err) {
         console.error('Caught an error', err)
         reject(err)
       })
 
-      unzipper.on('extract', function(log) {
+      unzipper.on('extract', function (log) {
         console.log('Finished extracting', log)
         resolve(log)
       })
 
-      unzipper.on('progress', function(fileIndex, fileCount) {
+      unzipper.on('progress', function (fileIndex, fileCount) {
         console.log('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
       })
 
       unzipper.extract({
         path: desination,
-        filter: function(file) {
+        filter: function (file) {
           return file.type !== 'SymbolicLink'
         }
       })
     })
   },
-  async installTRex() {
-    gpu.emit('status', 'Installing Trex...')
-    try {
-      const result = await gpu.unzip(path.join(RESOURCEDIR,'trex.zip'),TREXPATH)
-      console.log(result)
-      gpu.emit('status',result)
-      return true
-    } catch (error) {
-      gpu.emit('error',error)
-      console.error(error)
-      return false
+  trex: {
+    async install() {
+      gpu.emit('status', 'Installing Trex...')
+      try {
+        const result = await gpu.unzip(path.join(RESOURCEDIR, 'trex.zip'), TREXPATH)
+        console.log(result)
+        gpu.emit('status', result)
+        return true
+      } catch (error) {
+        gpu.emit('error', error)
+        console.error(error)
+        return false
+      }
+
+    },
+    async start() {
+      const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(console.log)
+      if (!result) {
+        gpu.emit('status', 'Trex not installed')
+        const installed = await gpu.trex.install()
+        if (installed) gpu.trex.start()
+        else gpu.emit('message', 'Unable to start due to Install error')
+      } else {
+        console.log('ready to start trex')
+        gpu.emit('status', 'starting...')
+        try {
+          gpu.shouldBeRunning = true
+          if (gpu.trex.miner && gpu.trex.miner.killed === false ) return gpu.trex.miner.kill()
+          gpu.trex.miner = spawn('./t-rex.exe',
+            ['-a', 'x16r', '-o', 'stratum+tcp://rvn.boid.com:3636', '-u', 'RHoQhptpZRHdL2he2FEEXwW1wrxmYJsYsC.cjv74fygjupf109942wo0j9qf', '-i', '20'], {
+              silent: false,
+              cwd: TREXPATH,
+              shell: false,
+              detached: false,
+              env: null
+            })
+          gpu.trex.miner.stdout.on('data', data => gpu.emit('status', data.toString()))
+          gpu.trex.miner.stderr.on('data', data => gpu.emit('error', data.toString()))
+          gpu.trex.miner.on('exit', (code, signal) => {
+            console.log('detected close code:', code, signal)
+            console.log('should be running', gpu.shouldBeRunning)
+            gpu.trex.miner.removeAllListeners()
+            gpu.trex.miner = null
+            if (gpu.shouldBeRunning) {
+              gpu.emit('message','The Miner stopped and Boid is restarting it')
+              gpu.trex.start()
+            } else{
+              gpu.emit('message', 'The Miner was stopped')
+              gpu.emit('status', 'Stopped')
+              gpu.emit('toggle', false)
+            }
+          })
+        } catch (error) {
+          console.error(error)
+          gpu.emit('error', error)
+          return
+        }
+      }
+    },
+    async stop(){
+      gpu.shouldBeRunning = false
+      if (!gpu.trex.miner) return gpu.emit('toggle', false)
+      gpu.trex.miner.kill()
+    },
+    async getStats(){
+      try {
+        const stats = (await ax.get('http://127.0.0.1:4067/summary')).data
+        if (stats) { gpu.emit('trex.getStats',stats) }
+      } catch (error) {
+        gpu.emit('error',error)
+      }
     }
-
-
-    return 'ok'
-  },
-  async startTrex() {
-    const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(console.log)
-    if (!result) {
-      gpu.emit('status', 'Trex not installed')
-      const installed = await gpu.installTRex()
-      if (installed) gpu.startTrex()
-      else gpu.emit('message', 'Unable to start due to Install error')
-    }else{
-      console.log('ready to start trex')
-      gpu.emit('status','starting...')
-    }
-
-
   }
+
 }
 
 // gpu.getGPU()

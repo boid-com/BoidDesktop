@@ -146,7 +146,7 @@ function setupWindow () {
     console.log('app window ready to show')
     appWindow.show()
     if (thisPlatform === 'darwin') appWindow.setSize(450, 620)
-    else appWindow.setSize(470, 630)
+    else appWindow.setSize(460, 630)
     appWindow.setAutoHideMenuBar(true)
 
     appWindow.center()
