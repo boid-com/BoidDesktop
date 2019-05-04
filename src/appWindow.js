@@ -11,14 +11,14 @@ var reloadInterval = null
 // }, 100)
 console.log('appWindow loaded')
 var initial = true
-
 webview.addEventListener('dom-ready', () => {
   if (isDev) webview.openDevTools()
   ipcRenderer.send('getDevice')
   if (!initial) return 
   initial = false
   webview.setZoomLevel(0)
-  
+  ipcRenderer.send('webview', webview)
+
   ipcRenderer.on('requestLogin', () => {
     console.log('got login auth request')
   })
@@ -33,6 +33,10 @@ webview.addEventListener('dom-ready', () => {
   ipcRenderer.on('boinc.toggle', (event, toggle) => {
     webview.send('boinc.toggle', toggle)
   })
+
+  // ipcRenderer.on('gpu.getGPU', (event, toggle) => {
+  //   webview.send('gpu.getGPU', toggle)
+  // })
 
   ipcRenderer.on('boinc.suspended', (event, toggle) => {
     webview.send('boinc.suspended', toggle)

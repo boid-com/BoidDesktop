@@ -1,16 +1,14 @@
-import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker,shell} from 'electron'
-const os = require('os')
-const isDev = require('electron-is-dev')
-const fixPath = require('fix-path')
-const exec = require('child_process').exec
-const auth = require('./auth')
-const kill = require('tree-kill')
-const unhandled = require('electron-unhandled')
-const gpu = require('./gpu')
-unhandled()
+import { app, BrowserWindow, Menu, Tray, dialog, protocol, ipcMain, powerSaveBlocker, shell } from 'electron'
 import firstRun from 'first-run'
 import path from 'path'
 import boinc from './boinc'
+const os = require('os')
+const isDev = require('electron-is-dev')
+const fixPath = require('fix-path')
+const auth = require('./auth')
+const unhandled = require('electron-unhandled')
+const gpu = require('./gpu')
+unhandled()
 var config = null
 require('electron-debug')({
   // showDevTools: true
@@ -19,7 +17,6 @@ if (require('./squirrelHandler')) app.quit()
 
 const thisPlatform = os.platform()
 let tray
-var authWindow = null
 fixPath()
 var willQuitApp = false
 app.setName('Boid')
@@ -27,6 +24,7 @@ app.disableHardwareAcceleration()
 protocol.registerStandardSchemes(['boid'])
 var appWindow
 const id = powerSaveBlocker.start('prevent-app-suspension')
+console.log(id)
 if (thisPlatform === 'win32') {
   console.log('found Windows Platform')
 } else if (thisPlatform === 'darwin') {
@@ -36,12 +34,11 @@ if (thisPlatform === 'win32') {
 
 const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
   if (appWindow) {
-      appWindow.restore()
-      appWindow.show() 
-      appWindow.focus()
+    appWindow.restore()
+    appWindow.show()
+    appWindow.focus()
   }
   // console.log('make single ins')
-
 })
 
 if (isSecondInstance) {
@@ -50,13 +47,13 @@ if (isSecondInstance) {
 
 var powerBlocker
 
-function setupTray() {
+function setupTray () {
   tray = new Tray(path.join(__dirname, 'img', 'trayicon.png'))
 
   const contextMenu = Menu.buildFromTemplate([
     {
       label: 'Open Boid',
-      click() {
+      click () {
         if (appWindow) {
           console.log('found exisiting appWindow')
           appWindow.show()
@@ -67,12 +64,12 @@ function setupTray() {
     },
     {
       label: 'Exit Boid',
-      click() {
+      click () {
         boinc.cmd('quit')
         appWindow.hide()
-        setTimeout(()=>{
+        setTimeout(() => {
           app.quit()
-        },5000)
+        }, 5000)
       }
     }
   ])
@@ -89,22 +86,23 @@ function setupTray() {
 
   const editMenu = Menu.buildFromTemplate([
     {
-      label: "Edit",
+      label: 'Edit',
       submenu: [
-        { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-        { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-        { type: "separator" },
-        { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-        { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-        { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-        { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" }
-    ]}
+        { label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
+        { label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
+        { type: 'separator' },
+        { label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
+        { label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
+        { label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
+        { label: 'Select All', accelerator: 'CmdOrCtrl+A', selector: 'selectAll:' }
+      ]
+    }
   ])
 
   Menu.setApplicationMenu(editMenu) // Enable keyboard shortcuts
 }
 
-function setupWindow() {
+function setupWindow () {
   appWindow = new BrowserWindow({
     width: 450,
     height: 600,
@@ -116,17 +114,16 @@ function setupWindow() {
   })
   appWindow.loadURL(`file://${__dirname}/appwindow.html`)
 
-
   appWindow.on('close', (e) => {
     if (willQuitApp) {
-      appWindow = null;
+      appWindow = null
     } else {
       e.preventDefault()
       appWindow.hide()
       console.log(thisPlatform)
-      if (thisPlatform == 'darwin') app.dock.hide()
+      if (thisPlatform === 'darwin') app.dock.hide()
     }
-  });
+  })
 
   auth.events.on('requestLogin', () => {
     console.log('got REQUEST LOGIN')
@@ -154,7 +151,6 @@ function setupWindow() {
 
     appWindow.center()
     gpu.init(appWindow)
-    gpu.emit('helloWorld')
     // if (isDev) appWindow.showDevTools()
     if (thisPlatform === 'darwin') app.dock.show()
   })
@@ -177,13 +173,13 @@ function setupWindow() {
     boinc.cmd(data)
   })
   ipcMain.on('startBoinc', boinc.start)
-  ipcMain.on('openURL', (event,url)=>{
+  ipcMain.on('openURL', (event, url) => {
     return shell.openExternal(url)
   })
-  ipcMain.on('initBoinc', ()=>{boinc.start()})
+  ipcMain.on('initBoinc', () => { boinc.start() })
   ipcMain.on('boinc.config.get', boinc.config.get)
-  ipcMain.on('boinc.config.set', (event, configData)=>{
-    console.log('got ConfigData in Index',configData)
+  ipcMain.on('boinc.config.set', (event, configData) => {
+    console.log('got ConfigData in Index', configData)
     boinc.config.set(configData)
   })
   ipcMain.on('boinc.activeTasks', async (event) => {
@@ -230,12 +226,8 @@ function setupWindow() {
     appWindow.webContents.send('boinc.error', value)
   })
 }
-var init2 = function() {
-  console.log(app.getPath('home'))
-  // boinc.init()
-}
-var init = async () => {
 
+var init = async () => {
   config = require('electron-settings')
   config.set('stayAwake', true)
   if (!isDev && firstRun()) {
@@ -259,11 +251,11 @@ var init = async () => {
   //   auth.init()
   // }, 1000)
 }
-app.on('ready', ()=>{
+app.on('ready', () => {
   init()
 })
 
-var cleanUp = function(event) {
+var cleanUp = function (event) {
   console.log('CLEANUP')
   willQuitApp = true
   // kill(process.pid)
@@ -273,17 +265,17 @@ var cleanUp = function(event) {
 app.on('before-quit', cleanUp)
 app.on('quit', cleanUp)
 
-app.on('window-all-closed', function() {
+app.on('window-all-closed', function () {
   console.log('All Windows Closed')
 })
-process.on('uncaughtException', function(err) {
+process.on('uncaughtException', function (err) {
   console.log('UNCAUCH EXCEPTION', err)
-  dialog.showErrorBox('Boid Error',err)
+  dialog.showErrorBox('Boid Error', err)
   // cleanUp()
 })
 
 process.on('unhandledRejection', (r) => {
-  console.log('UNHANDLED REJECTION:',r)
+  console.log('UNHANDLED REJECTION:', r)
   // setTimeout(() => {
   //   app.relaunch()
   //   app.exit()
