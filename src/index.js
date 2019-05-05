@@ -24,7 +24,7 @@ app.disableHardwareAcceleration()
 protocol.registerStandardSchemes(['boid'])
 var appWindow
 const id = powerSaveBlocker.start('prevent-app-suspension')
-console.log(id)
+// console.log(id)
 if (thisPlatform === 'win32') {
   console.log('found Windows Platform')
 } else if (thisPlatform === 'darwin') {
@@ -238,7 +238,7 @@ var init = async () => {
   }
   if (config.get('stayAwake')) {
     powerBlocker = powerSaveBlocker.start('prevent-app-suspension')
-    console.log('STARTED BLOCKING SHUTDOWN', powerSaveBlocker.isStarted(powerBlocker))
+    // console.log('STARTED BLOCKING SHUTDOWN', powerSaveBlocker.isStarted(powerBlocker))
   } else {
     if (powerBlocker) {
       powerSaveBlocker.stop(powerBlocker)
