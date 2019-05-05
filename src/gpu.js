@@ -8,6 +8,8 @@ var path = require('path')
 require('fix-path')()
 const spawn = require('child_process').spawn
 const ax = require('axios')
+const Store = require('electron-store');
+const store = new Store();
 
 const { exec } = require('child-process-promise')
 import { app } from 'electron'
@@ -22,6 +24,9 @@ var GPUPATH = path.join(HOMEPATHRAW, 'GPU')
 var RESOURCEDIR = path.join(__dirname, '../')
 const TREXPATH = path.join(GPUPATH, 'trex')
 
+ipcMain.on('gpu.init', async (event, arg) => {
+  if (arg.device) store.set('thisDevice',arg.device)
+})
 
 var gpu = {
   window: null,

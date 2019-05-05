@@ -67,6 +67,7 @@
     "electron-is-dev": "^0.3.0",
     "electron-settings": "^3.1.4",
     "electron-squirrel-startup": "^1.0.0",
+    "electron-store": "^3.2.0",
     "electron-sudo": "^4.0.12",
     "electron-unhandled": "^1.1.0",
     "first-run": "^1.2.0",

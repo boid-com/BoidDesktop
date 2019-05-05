@@ -7,7 +7,7 @@ const isDev = require('electron-is-dev')
 const fixPath = require('fix-path')
 const auth = require('./auth')
 const unhandled = require('electron-unhandled')
-const gpu = require('./gpu')
+require('./gpu')
 unhandled()
 var config = null
 require('electron-debug')({
@@ -150,7 +150,7 @@ function setupWindow () {
     appWindow.setAutoHideMenuBar(true)
 
     appWindow.center()
-    gpu.init(appWindow)
+    // gpu.init(appWindow)
     // if (isDev) appWindow.showDevTools()
     if (thisPlatform === 'darwin') app.dock.show()
   })
