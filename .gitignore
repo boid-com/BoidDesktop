@@ -3,3 +3,4 @@ out
 /src/BOINC
 .DS_Store
 src/.DS_Store
+dxdiag.xml
