@@ -10,7 +10,7 @@ const spawn = require('child_process').spawn
 const ax = require('axios')
 const parseXML = require('xml-to-json-promise').xmlFileToJSON
 const { exec } = require('child-process-promise')
-const jsonfile = require('jsonfile')
+const jsonfile = require('jsonfile')        
 import { app } from 'electron'
 
 function dir(dir) {
@@ -64,6 +64,7 @@ var gpu = {
       event.sender.send('gpu.getGPU', result)
     })
     setupIPC(gpu.trex, 'trex')
+    
   },
   async getGPU() {
     if (thisPlatform === 'win32') {
@@ -113,6 +114,7 @@ var gpu = {
         const result = await gpu.unzip(path.join(RESOURCEDIR, 'trex.zip'), TREXPATH)
         console.log(result)
         gpu.emit('status', result)
+        await gpu.trex.config.init()
         return true
       } catch (error) {
         gpu.emit('error', error)
@@ -124,9 +126,10 @@ var gpu = {
     async checkInstalled(){
       const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(console.log)
       if (!result) gpu.emit('status', 'Trex not installed')
-
+      return result
     },
     async start() {
+      const result = await gpu.trex.checkInstalled()
       if (!result) {
         const installed = await gpu.trex.install()
         if (installed) gpu.trex.start()
