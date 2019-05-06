@@ -12,7 +12,16 @@ var reloadInterval = null
 console.log('appWindow loaded')
 var initial = true
 webview.addEventListener('dom-ready', () => {
-  if (isDev) webview.openDevTools()
+  ipcRenderer.on('debug', webview.openDevTools)
+  if (isDev) {
+    document.addEventListener("keydown", function (e) {
+      if (e.which === 123) {
+        webview.openDevTools();
+      } else if (e.which === 116) {
+        location.reload();
+      }
+    });
+  }
   ipcRenderer.send('getDevice')
   if (!initial) return 
   initial = false
@@ -52,9 +61,8 @@ webview.addEventListener('dom-ready', () => {
     webview.send('boinc.activeTasks', tasks)
   })
   webview.addEventListener('ipc-message', (event) => {
-    if (event.channel === 'user') {
-      console.log('receive User Event', event.args[0])
-      ipcRenderer.send('user', event.args[0])
+    if (event.channel === 'debug') {
+      webview.openDevTools()
     } else if (event.channel === 'token') {
       console.log('received Token Event', event.args[0])
       ipcRenderer.send('token', event.args[0])

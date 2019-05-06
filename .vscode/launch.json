@@ -8,6 +8,7 @@
   "type": "node",
   "request": "launch",
   "name": "Electron Main",
+  "outputCapture": "std",
   "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-nix",
   "windows": {
     "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-forge-vscode-win.cmd"
