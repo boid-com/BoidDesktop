@@ -1,0 +1,62 @@
+{
+   "accepted_count":6,
+   "active_pool":{
+      "difficulty":8.0,
+      "ping":41,
+      "retries":0,
+      "url":"stratum+tcp://rvn.boid.com:3636",
+      "user":"RHoQhptpZRHdL2he2FEEXwW1wrxmYJsYsC.cjv74fygjupf109942wo0j9qf"
+   },
+   "algorithm":"x16r",
+   "api":"3.0",
+   "cuda":"10.0",
+   "description":"T-Rex NVIDIA GPU miner",
+   "difficulty":175277.71573886479,
+   "gpu_total":1,
+   "gpus":[
+      {
+         "device_id":0,
+         "efficiency":"55kH/W",
+         "fan_speed":0,
+         "gpu_id":0,
+         "hashrate":10885825,
+         "hashrate_day":0,
+         "hashrate_hour":10626718,
+         "hashrate_instant":11767170,
+         "hashrate_minute":10880686,
+         "intensity":18.0,
+         "name":"GeForce GTX 970",
+         "power":193,
+         "temperature":67,
+         "vendor":"Gigabyte"
+      }
+   ],
+   "hashrate":10885825,
+   "hashrate_day":0,
+   "hashrate_hour":10626718,
+   "hashrate_minute":10880686,
+   "name":"t-rex",
+   "os":"win",
+   "rejected_count":0,
+   "solved_count":0,
+   "success":1,
+   "ts":1557158159,
+   "updates":{
+      "download_status":{
+         "downloaded_bytes":0,
+         "last_error":"",
+         "time_elapsed_sec":0.0,
+         "total_bytes":0,
+         "update_in_progress":false,
+         "update_state":"idle",
+         "url":""
+      },
+      "md5sum":"c180aa1b4612cb5023c0ba51b6589d81",
+      "notes":"\r\nAdd support for GIN (x16rt)",
+      "notes_full":"* Add support for GIN (x16rt)<br>* Cosmetic changes:<br>  * New parameter \"--ab-indexing\" to enable Afterburner-like GPU indexing<br>  * Web-monitoring page enhancements<br><br>Bug fixes:<br>* CentOS 7 linking issue: https://github.com/trexminer/T-Rex/issues/5",
+      "url":"https://github.com/trexminer/T-Rex/releases/download/0.9.2/t-rex-0.9.2-win-cuda10.0.zip",
+      "version":"0.9.2"
+   },
+   "uptime":80,
+   "version":"0.8.9"
+}
