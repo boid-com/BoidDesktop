@@ -17,6 +17,7 @@ const isDev = require( 'electron-is-dev' )
 const fixPath = require( 'fix-path' )
 const auth = require( './auth' )
 const unhandled = require( 'electron-unhandled' )
+
 require( './gpu' )
 unhandled()
 var config = null
@@ -146,7 +147,8 @@ function setupWindow() {
     resizable: false,
     maximizable: false,
     fullscreenable: false,
-    title: 'Boid Desktop'
+    title: 'Boid Desktop',
+    frame:true
   } )
   appWindow.loadURL( `file://${__dirname}/appwindow.html` )
   if ( thisPlatform === 'win32' ) appWindow.setMenu( null )

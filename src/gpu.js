@@ -389,14 +389,14 @@ var gpu = {
       },
       async setIntensity( intensity ) {
         try {
-          if ( intensity > 20 || intensity < 8 ) return gpu.emit( 'error', 'invalid intensity setting' )
+          if ( intensity > 20 || intensity < 10 ) return gpu.emit( 'error', 'invalid intensity setting' )
           var configArray = await jsonfile.readFile( path.join( WILDRIGPATH, 'boid-wildrig-config.json' ) )
           const index = configArray.findIndex(el => {
             el = el.split('=')
             el[0] = el[0].replace('--','')
             return el[0] === 'opencl-launch'
           })
-          configArray[index] = intensity + 'x0'
+          configArray[index] = '--opencl-launch=' + intensity.toFixed(2) + 'x0'
           await jsonfile.writeFile( path.join( WILDRIGPATH, 'boid-wildrig-config.json' ), configArray )
           gpu.emit( 'wildrig.config.read', await gpu.wildrig.config.read() )
         } catch ( error ) {

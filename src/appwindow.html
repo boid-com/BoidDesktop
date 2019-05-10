@@ -3,15 +3,45 @@
 <style> ::selection { background: grey; /* WebKit/Blink Browsers */ } 
   body {
     background: white;
-
+  }
+  header {
+    -webkit-app-region: drag;
+  }
+  .win32 {
+    display:flex;
+    justify-content: flex-end;
+    visibility:visible;
+  }
+  .win32 button{
+    background-color:transparent;
+    color:white;
+    border: 0ch;
+    font-size:15px;
+    outline: none; 
+    
+  }
+  .win32 button img {
+    filter: invert(1)
+  }
+  .macos {
+    visibility: visible;
+  }
+  button {
+    -webkit-app-region: no-drag;
   }
 </style>
 
 </head>
 <body style="overflow:hidden; position: relative;" >
   <h4 id="loadingmsg"> waiting for internet...</h4>
-  <webview style=" background:white; position: absolute; top:-8px; bottom:-8px; right:-8px; left: -8px; " preload="./preload.js" src="data:text/plain,Hi!"></webview>
-  <!-- <webview style="width:100vw; height:100vh" preload="./preload.js" src="https://app.boid.com/auth"></webview> -->
+  <webview style=" z-index: 1; background:white; position: absolute; top:-8px; bottom:-8px; right:-8px; left: -8px; " preload="./preload.js" src="data:text/plain,Hi!"></webview>
+  <!-- <header style="position: absolute; height:35px; width:100vw; top:-8px; left: -8px; background-color:#027be3;" class="titleBar">
+    <div class="win32">
+      
+      <button><img style src="./img/closeicon.svg" alt="" style="height:10px; padding: 15px;"></button>
+    </div>
+    <header style="height:70px; width:260px; background-color:transparent;"></div>
+  </header> -->
 </body>
 
 <script src="./appWindow.js"></script>
