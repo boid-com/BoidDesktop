@@ -60,24 +60,104 @@ async function setupIPC( methods, prefix1, prefix2 ) {
   }
 }
 
+const ipc = {
+  async on(channel, func) {
+    channel = 'gpu.' + channel
+    console.log('ipcOn:', channel, func)
+    return await ipcMain.on(channel, async (event, data) => {
+      return await func(data)
+    })
+  }
+}
+
 var gpu = {
   eventsRegistered: false,
   deviceID: null,
   window: null,
+  async reset(){
+    await gpu.wildrig.stop()
+    await gpu.trex.stop()
+    try {
+      await fs.remove(GPUPATH), gpu.emit('Message',"GPU Directory removed",GPUPATH)
+      app.relaunch()
+      app.exit()
+    } catch (error) {
+      console.error(error)
+      gpu.emit("error",error)
+    }
+
+  },
   emit( channel, data, event ) {
     if ( gpu.window ) gpu.window.send( 'gpu.' + channel, data )
     else console.log( 'window now set!' )
 
     console.log( 'gpuEmit:', channel, data )
   },
+  async on(channel, func) {
+    channel = 'gpu.' + channel
+    console.log('ipcOn:', channel, func)
+    return await ipcMain.on(channel, async (event, data) => {
+      return await func(data)
+    })
+  },
+  config:{
+    async verify() {
+      await fs.ensureDir( GPUPATH )
+      const result = await fs.exists( path.join( GPUPATH, 'boid-gpu-config.json' ) ).catch( console.log )
+      if ( !result ) gpu.emit( 'status', 'gpu config missing' )
+      return result
+    },
+    async init( config ) {
+      try {
+        if (!config) throw('config missing')
+        const exists = await gpu.config.verify()
+        if ( exists ) {
+          gpu.emit( 'config.read', await gpu.config.read() )
+        } else {
+          gpu.emit( 'status', 'initializing global gpu config...' )
+          await jsonfile.writeFile( path.join( GPUPATH, 'boid-gpu-config.json' ), config )
+        }
+        gpu.emit( 'config.read', await gpu.config.read() )
+        
+        return gpu.config.read()
+      } catch ( error ) {
+        console.error( error )
+        gpu.emit( 'error', error )
+        return error
+      }
+    },
+    async read() {
+      try {
+        var config = await jsonfile.readFile( path.join( path.join( GPUPATH, 'boid-gpu-config.json' )) )
+        return config
+      } catch ( error ) {
+        await fs.remove(path.join( GPUPATH, 'boid-gpu-config.json' ))
+        console.log( error )
+        gpu.emit( 'error', error )
+        return null
+      }
+    },
+    async write(config) {
+      try {
+        await jsonfile.writeFile( path.join( path.join( GPUPATH, 'boid-gpu-config.json' )), config )
+        gpu.emit( 'config.read', await gpu.config.read() )
+      } catch ( error ) {
+        console.error( 'config write error' )
+      }
+    }
+  },
   async init( event, data ) {
     gpu.window = event.sender
     gpu.deviceID = data
-      // await fs.ensureDir(GPUPATH)
+    gpu.emit('init',{HOMEPATHRAW,GPUPATH,TREXPATH,WILDRIGPATH})
     if ( gpu.eventsRegistered ) return
     ipcMain.on( 'gpu.getGPU', async() => gpu.emit( 'getGPU', await gpu.getGPU() ) )
+    ipcMain.on('gpu.reset', (data)=> gpu.reset() )
+    // ipcMain.on( 'gpu.config.init', async(event,data) => gpu.emit( 'config.init', await gpu.config.init(data) ) )
+    // gpu.on('config.init',data => gpu.config.init(data))
     setupIPC( gpu.trex, 'trex' )
     setupIPC( gpu.wildrig, 'wildrig' )
+    setupIPC( gpu.config, 'config' )
     gpu.eventsRegistered = true
   },
   async getGPU() {
@@ -404,9 +484,7 @@ var gpu = {
         }
 
       },
-      async write() {
 
-      },
       async read() {
         try {
           var config = await jsonfile.readFile( path.join( WILDRIGPATH, 'boid-wildrig-config.json' ) )

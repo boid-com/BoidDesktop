@@ -184,7 +184,7 @@ function setupWindow() {
     console.log( 'app window ready to show' )
     appWindow.show()
     if ( thisPlatform === 'darwin' ) appWindow.setSize( 450, 620 )
-    else appWindow.setSize( 460, 630 )
+    else appWindow.setSize( 460, 645 )
     appWindow.setAutoHideMenuBar( true )
 
     appWindow.center()
@@ -214,6 +214,9 @@ function setupWindow() {
   ipcMain.on( 'openURL', ( event, url ) => {
     return shell.openExternal( url )
   } )
+  ipcMain.on( 'openDirectory', (event,dir) =>{
+    return shell.openItem(dir)
+  })
   ipcMain.on( 'initBoinc', () => {
     boinc.start()
   } )
