@@ -298,6 +298,11 @@ var init = async() => {
 }
 app.on( 'ready', () => {
   init()
+  var desktopIdle = require('desktop-idle')
+  setInterval(() => {
+    console.log(desktopIdle.getIdleTime())
+  }, 1000)
+
 } )
 
 var cleanUp = function( event ) {
