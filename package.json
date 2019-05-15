@@ -75,6 +75,7 @@
     "fs-extra": "^5.0.0",
     "graphql-request": "^1.4.1",
     "jsonfile": "^5.0.0",
+    "machine-uuid": "^1.2.0",
     "node-zip": "^1.1.1",
     "sudo-prompt": "^8.1.0",
     "tree-kill": "^1.2.0",

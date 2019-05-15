@@ -24,7 +24,6 @@ var options = {
   // icns: '/Applications/Electron.app/Contents/Resources/Electron.icns'
 }
 import { app } from 'electron'
-
 if (isDev) var HOMEPATHRAW = path.join(app.getPath('home'), '.BoidDev')
 else var HOMEPATHRAW = path.join(app.getPath('home'), '.Boid')
 var HOMEPATH = dir(HOMEPATHRAW)

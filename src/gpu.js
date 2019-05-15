@@ -165,8 +165,11 @@ var gpu = {
       if ( thisPlatform === 'win32' ) {
         await fs.ensureDir( GPUPATH )
         const getName = ( await exec( 'wmic path win32_VideoController get name' ) ).stdout
-        var gpuName = await fs.readFile( path.join( GPUPATH, 'gpuName.txt' ) ).catch( () => {} )
-        if ( gpuName ) gpuName = gpuName.toString()
+        if (await fs.exists(path.join( GPUPATH, 'gpuName.txt' ))){
+          var gpuName = await fs.readFile( path.join( GPUPATH, 'gpuName.txt' ) ).catch( () => {} )
+          if ( gpuName ) gpuName = gpuName.toString()
+        } else var gpuName = ""
+    
         if ( getName === gpuName ) {
           const exists = await fs.exists( path.join( GPUPATH, 'dxdiag.xml' ) )
           if ( !exists ) await exec( `dxdiag /whql:off /x ${path.join(GPUPATH,'dxdiag.xml')}`, {
@@ -326,6 +329,10 @@ var gpu = {
         try {
           const exists = await gpu.trex.config.verify()
           if ( exists ) {
+            const currentConfig = await jsonfile.readFile(path.join( TREXPATH, 'boid-trex-config.json' ))
+            if (currentConfig.pools[0].user != config.pools[0].user){
+              await jsonfile.writeFile( path.join( TREXPATH, 'boid-trex-config.json' ), config )
+            }
             gpu.emit( 'trex.config.read', await gpu.trex.config.read() )
             return gpu.emit( 'status', 'trex config exists' )
           } else {
@@ -453,6 +460,10 @@ var gpu = {
         try {
           const exists = await gpu.wildrig.config.verify()
           if ( exists ) {
+            const currentConfig = await gpu.wildrig.config.read()
+            if (currentConfig[0] != config[0]){
+              await jsonfile.writeFile( path.join( WILDRIGPATH, 'boid-wildrig-config.json' ), config )
+            }
             gpu.emit( 'wildrig.config.read', await gpu.wildrig.config.read() )
             return gpu.emit( 'status', 'wildrig config exists' )
           } else {
