@@ -3,51 +3,23 @@ const cfg = require( 'electron-settings' )
 import {ipcMain,app,powerSaveBlocker} from 'electron'
 const isDev = require( 'electron-is-dev' )
 
-if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
-else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
-var BOINCPATH = path.join(HOMEPATHRAW, 'BOINC')
-
-var config = {}
-var ipc = null
-
-const defaultConfig = {
-  device:{
+var device = {
+  default: {
     cpid:false,
     wcgid:false,
-    uid:false,
-  },
-  config:{
-    startMinimized:false,
-    addToStartup:true,
-    stayAwake:true,
-    firstRun:true,
-  },
-  state:{
-    gpu:{
-      toggle:false,
-      logs:[],
-      disabled:true
-    },
-    cpu:{
-      toggle:false,
-      logs:[],
-      disabled:true
-    },
-    hdd:{
-      toggle:false,
-      logs:[],
-      disabled:true
-    }
+    uid:false
   }
 }
+var ipc = null
 
-config.reset = async function init(cb){
+
+device.reset = async function init(cb){
   try {
-    cfg.deleteAll()
-    cfg.setAll(defaultConfig)
+    cfg.delete('device')
+    cfg.set('device',device.default)
     const deviceID = await duid()
     cfg.set('device.uid',deviceID)
-    const result = cfg.getAll()
+    const result = cfg.get('device')
     if (cb) return cb(result)
     else return result
   } catch (error) {
@@ -57,7 +29,7 @@ config.reset = async function init(cb){
   }
 }
 
-config.init = async function init(){
+device.init = async function init(){
     setupListeners()
     const savedID = cfg.get('device.uid')
     const deviceID = await duid()
@@ -118,6 +90,6 @@ config.on = async function ( channel, func) {
 
 
 
-module.exports = config
+module.exports = device
 
 // config.init()

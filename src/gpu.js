@@ -19,6 +19,7 @@ const jsonfile = require( 'jsonfile' )
 import {
   app
 } from 'electron'
+const cfg = require( 'electron-settings' )
 
 function dir( dir ) {
   return dir.replace( /(["\s'$`\\])/g, '\\ ' )
@@ -57,16 +58,6 @@ async function setupIPC( methods, prefix1, prefix2 ) {
       const emitChannel = channel.split( 'gpu.' )[ 1 ]
       gpu.emit( emitChannel, await ( eval( channel )( arg ) ) )
     } )
-  }
-}
-
-const ipc = {
-  async on(channel, func) {
-    channel = 'gpu.' + channel
-    console.log('ipcOn:', channel, func)
-    return await ipcMain.on(channel, async (event, data) => {
-      return await func(data)
-    })
   }
 }
 
@@ -270,6 +261,7 @@ var gpu = {
       gpu.emit( 'status', 'starting...' )
       try {
         gpu.shouldBeRunning = true
+        cfg.set('state.gpu.toggle',true)
         if ( gpu.trex.miner && gpu.trex.miner.killed === false ) return gpu.trex.miner.kill()
         gpu.trex.miner = spawn( './t-rex.exe', [ '-c', path.join( TREXPATH, 'boid-trex-config.json' ) ], {
           silent: false,
@@ -291,7 +283,8 @@ var gpu = {
           } else {
             gpu.emit( 'message', 'The Miner was stopped' )
             gpu.emit( 'status', 'Stopped' )
-              // gpu.emit( 'toggle', false )
+            gpu.emit( 'toggle', false )
+            cfg.set('state.gpu.toggle',false)
           }
         } )
       } catch ( error ) {
@@ -302,6 +295,7 @@ var gpu = {
     },
     async stop() {
       gpu.shouldBeRunning = false
+      cfg.set('state.gpu.toggle',false)
       if ( !gpu.trex.miner ) return gpu.emit( 'toggle', false )
       gpu.trex.miner.kill()
       return 'finished stopping'
@@ -406,6 +400,7 @@ var gpu = {
       gpu.emit( 'status', 'starting...' )
       try {
         gpu.shouldBeRunning = true
+        cfg.set('state.gpu.toggle',true)
         if ( gpu.wildrig.miner && gpu.wildrig.miner.killed === false ) return gpu.wildrig.miner.kill()
         gpu.wildrig.miner = spawn( './wildrig.exe', await gpu.wildrig.config.read(), {
           silent: false,
@@ -424,6 +419,8 @@ var gpu = {
             gpu.emit( 'message', 'The Miner was stopped' )
             gpu.emit( 'status', 'Stopped' )
             gpu.emit( 'toggle', false )
+            cfg.set('state.gpu.toggle',false)
+
           }
         } )
       } catch ( error ) {
@@ -434,6 +431,7 @@ var gpu = {
     },
     async stop() {
       gpu.shouldBeRunning = false
+      cfg.set('state.gpu.toggle',false)
       if ( !gpu.wildrig.miner ) return gpu.emit( 'toggle', false )
       gpu.wildrig.miner.kill()
       return 'finished stopping'
