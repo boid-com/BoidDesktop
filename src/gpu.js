@@ -1,7 +1,4 @@
-import {
-  ipcMain,
-  ipcRenderer
-} from 'electron'
+import {ipcMain} from 'electron'
 const os = require( 'os' )
 const thisPlatform = os.platform()
 var unzip = require( 'decompress-zip' )
@@ -12,13 +9,9 @@ require( 'fix-path' )()
 const spawn = require( 'child_process' ).spawn
 const ax = require( 'axios' )
 const parseXML = require( 'xml-to-json-promise' ).xmlFileToJSON
-const {
-  exec
-} = require( 'child-process-promise' )
+const {exec} = require( 'child-process-promise' )
 const jsonfile = require( 'jsonfile' )
-import {
-  app
-} from 'electron'
+import {app} from 'electron'
 const cfg = require( 'electron-settings' )
 
 function dir( dir ) {
@@ -513,6 +506,6 @@ var gpu = {
 }
 
 
-ipcMain.on( 'gpu.init', gpu.init )
+// ipcMain.on( 'gpu.init', gpu.init )
 
 module.exports = gpu

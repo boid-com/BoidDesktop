@@ -1,6 +1,5 @@
 import {ipcMain} from 'electron'
 
-
 var wrapper = {
 prefix:"",
 ipc:null,
@@ -8,11 +7,11 @@ init(ipc,prefix){
   this.prefix = prefix
   this.ipc = ipc
 }, 
-async emit ( channel, data) {
+async send ( channel, data) {
   try {
     channel = this.prefix + '.' + channel
     console.log('Emit:', channel, data )
-    this.ipc.send( channel, data )
+    this.ipc.send(channel,data)
     return true
   } catch (error) {
     console.error(error)
@@ -21,14 +20,19 @@ async emit ( channel, data) {
   }
 },
 async on ( channel, func) {
-  channel = 'config.' + channel
-  // if ( ipc ) ipc.on( 'config.' + channel, (event,data,data2) => await func(data,data2) )
-  // else console.log( 'window not set!' )
-  console.log( 'On:', channel, func )
-},
+  try {
+    channel = this.prefix + '.' + channel
+    console.log('On:', channel, func )
+    ipcMain.on(channel,(event,data,data2) => func(data,data2))
+  } catch (error) {
+    console.error(error)
+    ipcMain.emit('error',error)
+  }
+
+}
 }
 
 module.exports = wrapper
 
-wrapper.init('dopeAF')
-wrapper.emit('peacedude')
+// wrapper.init('dopeAF')
+// wrapper.emit('peacedude')

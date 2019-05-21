@@ -1,14 +1,16 @@
 const duid = require("machine-uuid")
 const cfg = require( 'electron-settings' )
 import {ipcMain,app,powerSaveBlocker} from 'electron'
+import { ECANCELED } from 'constants';
 const isDev = require( 'electron-is-dev' )
-
-if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
-else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
-var BOINCPATH = path.join(HOMEPATHRAW, 'BOINC')
-
+const ipc = require('./ipcWrapper')
+const boinc = require('./boinc')
+const os = require('os')
+function ec(error) {
+  console.error(error)
+  ipcMain.emit('error', error)
+}
 var config = {}
-var ipc = null
 
 const defaultConfig = {
   device:{
@@ -41,46 +43,43 @@ const defaultConfig = {
   }
 }
 
-config.reset = async function init(cb){
+config.reset = async function(cb){
   try {
     cfg.deleteAll()
     cfg.setAll(defaultConfig)
-    const deviceID = await duid()
-    cfg.set('device.uid',deviceID)
     const result = cfg.getAll()
     if (cb) return cb(result)
     else return result
   } catch (error) {
-    console.error(error)
-    ipcMain.emit('error',error)
-    return null
+    ec(error)
   }
 }
 
-config.init = async function init(){
+config.init = async function(force,cb){
+  try {
+    await config.updateDeviceID()
+    if (!cfg.get('config')) cfg.set('config',defaultConfig.config)
+    if (!cfg.get('state')) cfg.set('state', defaultConfig.state)
     setupListeners()
-    const savedID = cfg.get('device.uid')
-    const deviceID = await duid()
-    if (!savedID || deviceID != savedID ) return config.reset(config.init)
-    await findBoincConfig()
     const result = cfg.getAll()
-    handlestayAwake(result.stayAwake)
-    handleAddToStartup(result.addToStartup)
+    handlestayAwake(result.config.stayAwake)
+    handleAddToStartup(result.config.addToStartup)
     return result
-  }
+  } catch (error) {ec(error)}
+}
 
-config.emit = async function ( channel, data, event ) {
-    if ( ipc ) ipc.send( 'config.' + channel, data )
-    else console.log( 'ipc not set!' )
-    console.log( 'configEmit:', channel, data )
-  },
-
-config.on = async function ( channel, func) {
-    channel = 'config.' + channel
-    if ( ipc ) ipc.on( 'config.' + channel, (event,data,data2) => await func(data,data2) )
-    else console.log( 'window not set!' )
-    console.log( 'ConfigOn:', channel, func )
-  },
+config.updateDeviceID = async function(){
+  try {
+    const deviceID = await duid()
+    cfg.set('device.uid', deviceID)
+    cfg.set('device.name', os.hostname())
+    cfg.set('device.os', os.platform())
+    const boincDevice = await boinc.state.getDevice()
+    if (!boincDevice) return
+    cfg.set('device.cpid',boincDevice.cpid)
+    cfg.set('device.wcgid',boincDevice.wcgid)
+  } catch (error) { ec(error) }
+}
 
   function handlestayAwake(data){
     if (data) config.powerBlockerID = powerSaveBlocker.start('prevent-app-suspension') 
@@ -93,31 +92,19 @@ config.on = async function ( channel, func) {
   }
 
   function setupListeners(){
-    cfg.watch('stayAwake', handlestayAwake)
-    cfg.watch('addToStartup', handleAddToStartup)
-    ipcMain.on('config.init', event => {ipc = event.sender,config.emit('init',true)})
-
-    ipcMain.on('config')
-
-
-    ipcMain.on('config.get', async (event,data) => {
-      ipc = event.sender
-      config.emit.send('config.get',await cfg.getAll())
-    })
-
-    ipcMain.on('config.set',(event,key,data)=>{
-      try {
-        event.sender.send('config.set',await cfg.get())
-      } catch (error) {
-        
-      }
-      cfg.set(key,data)
-      ui.send('config.set',await cfg.get())
-    })
+    cfg.watch('config.stayAwake', handlestayAwake)
+    cfg.watch('config.addToStartup', handleAddToStartup)
+    ipcMain.on('config.initIPC', event => ipc.init(event.sender,'config'))
+    ipcMain.once('config.initIPC', event => {
+      console.log('init config ipc')
+      ipc.on('getDevice',(data) => ipc.send('getDevice',cfg.get('device')))
+      ipc.on('getConfig',(data) => ipc.send('getConfig',cfg.get('config')))
+      ipc.on('getState', (data) => ipc.send('getState', cfg.get('state')))
+      ipc.on('set',(data,data2) => ipc.send('set',cfg.set(data,data2)))
+    }
+    )
   }
-
-
-
+  
 module.exports = config
 
 // config.init()

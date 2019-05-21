@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "baseUrl": ".",
+    "paths": {
+      "App/*": [
+        "./*"
+      ]
+    }
+  },
+  "exclude": [
+    "dist"
+  ]
+}

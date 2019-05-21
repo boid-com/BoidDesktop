@@ -2,27 +2,31 @@ import {ipcMain,app,shell} from 'electron'
 const deviceID = require("machine-uuid")
 const platform = require( 'os' ).platform()
 const cfg = require( 'electron-settings' )
+var gpu = require('./gpu')
+var boinc = require('./boinc')
 var ui
 
 function init(appWindow) {
   app.on('activate', () => appWindow.show)
 
   appWindow.on( 'close', e => {
-    e.preventDefault()
-    appWindow.hide()
-    if ( platform === 'darwin' ) app.dock.hide()
+    // e.preventDefault()
+    // if (appWindow) appWindow.hide()
+    // if ( platform === 'darwin' ) app.dock.hide()
   })
   
 
-  appWindow.on('ready-to-show', () => {
-    appWindow.show()
-    if (platform === 'darwin') appWindow.setSize(450, 620), app.dock.show()
-    else appWindow.setSize(460, 645)
-    appWindow.setAutoHideMenuBar(true)
-    appWindow.center()
-  })
-
-
+  if (appWindow) { 
+      appWindow.on('ready-to-show', () => {
+      appWindow.show()
+      if (platform === 'darwin') appWindow.setSize(450, 620), app.dock.show()
+      else appWindow.setSize(460, 645)
+      if (appWindow) appWindow.setAutoHideMenuBar(true)
+      if (appWindow) appWindow.center()
+      ipcMain.once('gpu.init',gpu.init)
+      ipcMain.once('boinc.init',boinc.init)
+    })
+  }
   // ipcMain.on('getDevice', boinc.updateClientState)
   // ipcMain.on('localDevice', async (event) => {
   //   if (!boinc.device) await boinc.updateClientState().catch(console.log)
