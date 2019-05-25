@@ -19,12 +19,12 @@ function init(appWindow) {
   if (appWindow) { 
       appWindow.on('ready-to-show', () => {
       appWindow.show()
-      if (platform === 'darwin') appWindow.setSize(450, 620), app.dock.show()
+      if (platform === 'darwin') appWindow.setSize(450, 655), app.dock.show()
       else appWindow.setSize(460, 645)
       if (appWindow) appWindow.setAutoHideMenuBar(true)
       if (appWindow) appWindow.center()
-      ipcMain.once('gpu.init',gpu.init)
-      ipcMain.once('boinc.init',boinc.init)
+      ipcMain.on('gpu.init',gpu.init)
+      ipcMain.on('boinc.init',boinc.init)
     })
   }
   // ipcMain.on('getDevice', boinc.updateClientState)
