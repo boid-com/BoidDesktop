@@ -28,6 +28,6 @@ webview.addEventListener( 'dom-ready', () => {
     msg.style.display = "none"
     console.log( e )
   } )
-  if ( isDev ) webview.loadURL( 'http://localhost:8080/device2' )
-  else webview.loadURL( 'https://app.boid.com/device2' )
+  if ( isDev ) webview.loadURL( 'http://localhost:8080/desktop2' )
+  else webview.loadURL( 'https://app.boid.com/desktop2' )
 } )
