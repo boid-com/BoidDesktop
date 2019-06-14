@@ -3,14 +3,14 @@ const msg = document.getElementById( 'loadingmsg' )
 const isDev = require( 'electron-is-dev' )
 var initial = true
 webview.addEventListener( 'dom-ready', () => {
-  if ( isDev ) {
+  if ( true ) {
     document.addEventListener( "keydown", function( e ) {
       if ( e.which === 123 ) {
         webview.openDevTools();
       } else if ( e.which === 116 ) {
         location.reload();
       }
-    } );
+    } )
   }
   if ( !initial ) return
   initial = false
@@ -28,6 +28,6 @@ webview.addEventListener( 'dom-ready', () => {
     msg.style.display = "none"
     console.log( e )
   } )
-  if ( isDev ) webview.loadURL( 'http://localhost:8080/device' )
-  else webview.loadURL( 'https://app.boid.com/device' )
+  if ( isDev ) webview.loadURL( 'http://localhost:8080/device2' )
+  else webview.loadURL( 'https://app.boid.com/device2' )
 } )

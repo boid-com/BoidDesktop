@@ -6,7 +6,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
-    "build": "electron-forge package && xattr -cr * && electron-osx-sign out/Boid-darwin-x64/Boid.app/",
+    "build": "electron-forge package && xattr -cr * && rm out/Boid-darwin-x64/Boid.app/Contents/Resources/app/node_modules/electron-sudo/dist/bin/applet.app/LICENSE && rm /Users/boid/Dev/boidDev/electoboid/out/Boid-darwin-x64/Boid.app/Contents/Resources/app/node_modules/electron-sudo/src/bin/applet.app/LICENSE && electron-osx-sign out/Boid-darwin-x64/Boid.app/",
     "pack": "electron-forge make --skip-package",
     "publish": "electron-forge publish",
     "lint": "eslint src --color"
@@ -58,7 +58,8 @@
     }
   },
   "dependencies": {
-    "axios": "^0.18.0",
+    "auto-launch": "^5.0.5",
+    "axios": "^0.19.0",
     "child-process-promise": "^2.2.1",
     "decompress-zip": "^0.3.2",
     "electron": "^5.0.0",

@@ -32,7 +32,7 @@ async on ( channel, func) {
 }
 }
 
-module.exports = wrapper
+module.exports = () => wrapper
 
 // wrapper.init('dopeAF')
 // wrapper.emit('peacedude')
