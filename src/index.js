@@ -15,7 +15,10 @@ const config = require('./config')
 // if ( require( './squirrelHandler' ) ) app.quit()
 
 require( 'fix-path' )()
-if (require('electron-squirrel-startup')) app.quit()
+if (require('./squirrelHandler')) {
+  app.quit()
+  process.exit(0)
+}
 
 var thisPlatform = os.platform()
 let tray
