@@ -4,8 +4,6 @@ import {
   Menu,
   Tray,
   dialog,
-  ipcMain,
-  powerSaveBlocker,
 } from 'electron'
 import path from 'path'
 const os = require( 'os' )
@@ -15,9 +13,10 @@ const menus = require('./menus.js')
 // var cpu = require('./cpu')
 const config = require('./config')
 // if ( require( './squirrelHandler' ) ) app.quit()
-if (require('electron-squirrel-startup')) app.quit()
 
 require( 'fix-path' )()
+if (require('electron-squirrel-startup')) app.quit()
+
 var thisPlatform = os.platform()
 let tray
 app.setName( 'Boid' )
@@ -26,7 +25,6 @@ var appWindow
 var webView
 
 handleSecondInstance()
-
 
 app.on( 'ready', async () => {
   console.log(app.getPath('appData'))
@@ -79,8 +77,6 @@ function setupTray() {
   if (thisPlatform === 'darwin') Menu.setApplicationMenu(editMenu)
 }
 
-
-
 function handleSecondInstance(){
   const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
       if (appWindow) {
@@ -93,17 +89,6 @@ function handleSecondInstance(){
   if (isSecondInstance) {
       app.quit()
   }
-
-
-  // if (!app.requestSingleInstanceLock()) return app.quit()
-  
-  // app.on('second-instance', (event, commandLine, workingDirectory) => {
-  //   if (appWindow) {
-  //     if (appWindow.isMinimized()) appWindow.restore()
-  //     appWindow.show()
-  //     appWindow.focus()
-  //   }
-  // })
 }
 
 process.on( 'uncaughtException', function( err ) {
