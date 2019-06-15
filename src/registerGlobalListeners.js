@@ -10,6 +10,7 @@ var isQuiting
 function init(appWindow) {
   app.on('before-quit', async ()=>{
     isQuiting = true
+    if (appWindow) appWindow.close()
     boinc.killExisting()
   })
   app.on('activate', () => appWindow.show)
