@@ -14,7 +14,9 @@ require( 'electron-unhandled' )()
 const menus = require('./menus.js')
 // var cpu = require('./cpu')
 const config = require('./config')
-if ( require( './squirrelHandler' ) ) app.quit()
+// if ( require( './squirrelHandler' ) ) app.quit()
+if (require('electron-squirrel-startup')) app.quit()
+
 require( 'fix-path' )()
 var thisPlatform = os.platform()
 let tray

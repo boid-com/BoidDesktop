@@ -1,7 +1,7 @@
 {
   "name": "boiddesktop",
   "productName": "Boid",
-  "version": "0.0.05",
+  "version": "0.0.5",
   "description": "Desktop Application for the Boid platform",
   "main": "src/index.js",
   "scripts": {
