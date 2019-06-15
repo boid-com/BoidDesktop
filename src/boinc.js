@@ -167,15 +167,15 @@ boinc.stop = async (data) => {
 
 boinc.unzip = async () => {
   var unzipper = new unzip(path.join(RESOURCEDIR, 'BOINC-Win32.zip'))
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     console.log('STARTING TO UNZIP')
     unzipper.on('error', function (err) {
       console.error('Caught an error', err)
       reject(err)
     })
 
-    unzipper.on('extract', function (log) {
-      boinc.prefs.init()
+    unzipper.on('extract', async function (log) {
+      await boinc.prefs.init()
       resolve(log)
     })
 
@@ -184,7 +184,7 @@ boinc.unzip = async () => {
     })
 
     unzipper.extract({
-      path: BOINCPATHRAW,
+      path: BOINCPATH,
       filter: function (file) {
         return file.type !== 'SymbolicLink'
       }
