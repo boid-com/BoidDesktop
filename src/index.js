@@ -5,20 +5,21 @@ import {
   Tray,
   dialog,
 } from 'electron'
+if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
+  app.quit();
+}
 import path from 'path'
 const os = require( 'os' )
-const isDev = require( 'electron-is-dev' )
 require( 'electron-unhandled' )()
-const menus = require('./menus.js')
 // var cpu = require('./cpu')
 const config = require('./config')
 // if ( require( './squirrelHandler' ) ) app.quit()
 
 require( 'fix-path' )()
-if (require('./squirrelHandler')) {
-  app.quit()
-  process.exit(0)
-}
+// if (require('./squirrelHandler')) {
+//   app.quit()
+//   process.exit(0)
+// }
 
 var thisPlatform = os.platform()
 let tray
@@ -49,7 +50,7 @@ async function setupWindow() {
   })
   appWindow.loadURL(`file://${__dirname}/appwindow.html`)
   require('./registerGlobalListeners')(appWindow)
-  appWindow.on('closed',()=>{appWindow = null})
+  appWindow.on('closed',() => appWindow = null)
 }
 
 function setupTray() {
@@ -93,6 +94,8 @@ function handleSecondInstance(){
       app.quit()
   }
 }
+
+
 
 process.on( 'uncaughtException', function( err ) {
   console.log( 'UNCAUGHT EXCEPTION', err )
