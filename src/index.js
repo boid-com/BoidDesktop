@@ -4,9 +4,10 @@ import {
   Menu,
   Tray,
   dialog,
+  ipcMain
 } from 'electron'
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
-  app.quit();
+  app.quit()
 }
 import path from 'path'
 const os = require( 'os' )
@@ -46,12 +47,15 @@ async function setupWindow() {
     maximizable: false,
     fullscreenable: false,
     title: 'Boid Desktop',
-    frame: true
+    frame: true,
+    webviewTag:true
   })
   appWindow.loadURL(`file://${__dirname}/appwindow.html`)
   require('./registerGlobalListeners')(appWindow)
   appWindow.on('closed',() => appWindow = null)
 }
+
+var windowIPC
 
 function setupTray() {
   tray = new Tray(path.join(__dirname, 'img', 'trayicon.png'))
@@ -73,26 +77,48 @@ function setupTray() {
         // appWindow.hide()
         app.quit()
       }
+    },
+    {
+      label: 'Debug',
+      click(){
+        if (windowIPC) {
+          // console.log(windowIPC)
+          windowIPC.send('openConsole')
+        }
+      }
     }
   ])
   tray.setToolTip('Boid')
   tray.setContextMenu(contextMenu)
   const editMenu = Menu.buildFromTemplate(require('./defaultMenu.json'))
   if (thisPlatform === 'darwin') Menu.setApplicationMenu(editMenu)
+  else Menu.setApplicationMenu([])
 }
 
-function handleSecondInstance(){
-  const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
-      if (appWindow) {
-          if (appWindow.isMinimized()) appWindow.restore()
-          appWindow.show()
-          appWindow.focus()
-      }
-  })
+ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender )
 
-  if (isSecondInstance) {
-      app.quit()
-  }
+function handleSecondInstance(){
+  // const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
+  //     if (appWindow) {
+  //         if (appWindow.isMinimized()) appWindow.restore()
+  //         appWindow.show()
+  //         appWindow.focus()
+  //     }
+  // })
+
+  // if (isSecondInstance) {
+  //     app.quit()
+  // }
+
+  if (!app.requestSingleInstanceLock()) return app.quit()
+
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (appWindow) {
+      if (appWindow.isMinimized()) appWindow.restore()
+      appWindow.show()
+      appWindow.focus()
+    }
+  })
 }
 
 
