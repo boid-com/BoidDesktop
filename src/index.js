@@ -92,7 +92,6 @@ function setupTray() {
   tray.setContextMenu(contextMenu)
   const editMenu = Menu.buildFromTemplate(require('./defaultMenu.json'))
   if (thisPlatform === 'darwin') Menu.setApplicationMenu(editMenu)
-  else Menu.setApplicationMenu([])
 }
 
 ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender )
