@@ -16,7 +16,7 @@ function init(appWindow) {
   app.on('activate', () => appWindow.show)
   appWindow.on('ready-to-show', () => {
     if (platform === 'darwin') appWindow.setSize(450, 655), app.dock.show()
-    else appWindow.setSize(460, 655)
+    else appWindow.setSize(460, 660)
     appWindow.setAutoHideMenuBar(true)
     appWindow.center()
     ipcMain.on('gpu.init',gpu.init)
