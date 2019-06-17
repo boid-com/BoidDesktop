@@ -24,8 +24,7 @@
         "icon": "./logo",
         "name": "<%= productName %>",
         "appCopyright": "Boid Inc.",
-        "appBundleId": "com.boid.macos",
-
+        "appBundleId": "com.boid.macos"
       },
       "makers": [
         {

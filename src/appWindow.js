@@ -1,21 +1,13 @@
-import {ipcRenderer} from 'electron'
-const webview = document.querySelector( 'webview' )
+// const {ipcRenderer} = require('electron')
+const webview = document.getElementById( 'webview' )
 const msg = document.getElementById( 'loadingmsg' )
-const isDev = require( 'electron-is-dev' )
+// const isDev = require( 'electron-is-dev' )
 var initial = true
 
 webview.addEventListener( 'dom-ready', () => {
-  ipcRenderer.send('windowInitialized')
-  ipcRenderer.on('openConsole',() => webview.openDevTools())
-
-  // if ( true ) {
-  //   document.addEventListener( "keydown", function( e ) {
-  //     if ( e.which === 123 ) {
-  //     } else if ( e.which === 116 ) {
-  //       location.reload();
-  //     }
-  //   } )
-  // }
+  webview.openDevTools()
+  console.log('windowInitialized')
+  // ipcRenderer.on('openConsole',() => webview.openDevTools())
   if ( !initial ) return
   initial = false
   webview.setZoomLevel( 0 )

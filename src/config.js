@@ -1,14 +1,13 @@
 const duid = require("machine-uuid")
 const cfg = require( 'electron-settings' )
-import {ipcMain,app,powerSaveBlocker} from 'electron'
-import { ECANCELED } from 'constants';
+const {ipcMain,app,powerSaveBlocker} = require('electron')
 const isDev = require( 'electron-is-dev' )
 const ipc = require('./ipcWrapper')()
 const boinc = require('./boinc')
 const os = require('os')
 var AutoLaunch = require('auto-launch')
 var launcher = new AutoLaunch({name:"Boid"})
-function ec(error) {
+function ec(error) { 
   console.error(error)
   ipcMain.emit('error', error)
 }

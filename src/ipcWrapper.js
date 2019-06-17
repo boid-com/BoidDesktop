@@ -1,4 +1,4 @@
-import {ipcMain} from 'electron'
+const {ipcMain} = require('electron')
 
 var wrapper = {
 prefix:"",
@@ -31,8 +31,4 @@ async on ( channel, func) {
 
 }
 }
-
 module.exports = () => wrapper
-
-// wrapper.init('dopeAF')
-// wrapper.emit('peacedude')

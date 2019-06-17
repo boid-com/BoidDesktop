@@ -1,4 +1,4 @@
-import { ipcMain, shell, app} from 'electron'
+const { ipcMain, shell, app} = require('electron')
 const os = require('os')
 const thisPlatform = os.platform()
 var unzip = require('decompress-zip')
@@ -54,6 +54,11 @@ var boinc = {
 }
 boinc.killExisting = async () => {
   try {
+    await boinc.stop()
+    if ( boinc.process) {
+      process.kill(-boinc.process.pid)
+      boinc.process.kill()
+    }
     if (thisPlatform === 'win32') await exec('Taskkill /IM boinc.exe /F')
     else await exec('pkill -9 boinc')
     console.log('removed existing')
@@ -68,13 +73,13 @@ boinc.init = async (event) => {
   try {
     ipc.init(event.sender,'boinc')
     if (boinc.eventsRegistered) return
-    boinc.on('start',boinc.start)
-    boinc.on('stop',boinc.stop)
     boinc.on('cmd',boinc.cmd)
     boinc.on('state.getProject',boinc.state.getProject)
     boinc.on('state.getAll',boinc.state.getAll)
     boinc.on('getUI',boinc.getUI)
     // boinc.on('prefs.read',async ()=>boinc.send('prefs.read',async ()=> await boinc.prefs.read()))
+    setupIPC('start')
+    setupIPC('stop')
     setupIPC('prefs.read')
     setupIPC('prefs.write')
     setupIPC('config.read')
@@ -131,8 +136,9 @@ boinc.start = async (data) => {
       silent: false,
       cwd: BOINCPATH,
       shell: false,
-      detached: false,
-      env: null
+      detached: true,
+      env: null,
+
     })
     setTimeout(()=>boinc.send('started'),1000)
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))

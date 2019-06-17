@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+const { ipcMain, app} = require('electron')
 const os = require('os')
 const thisPlatform = os.platform()
 var unzip = require('decompress-zip')
@@ -11,7 +11,6 @@ const ax = require('axios')
 const parseXML = require('xml-to-json-promise').xmlFileToJSON
 const { exec } = require('child-process-promise')
 const jsonfile = require('jsonfile')
-import { app } from 'electron'
 const cfg = require('electron-settings')
 
 function dir (dir) { return dir.replace(/(["\s'$`\\])/g, '\\ ') }
