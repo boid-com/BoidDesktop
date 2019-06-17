@@ -1,5 +1,5 @@
 {
-  "name": "boiddesktop",
+  "name": "boid",
   "productName": "Boid",
   "version": "0.0.5",
   "description": "Desktop Application for the Boid platform",
@@ -28,9 +28,19 @@
       },
       "makers": [
         {
+          "name": "@electron-forge/maker-wix",
+          "config": {
+            "manufacturer": "Boid Inc.",
+            "description": "<%= description %>",
+            "ui":{
+              
+            }
+          }
+        },
+        {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "BoidDesktop",
+            "name": "Boid",
             "iconUrl": "https://assets.boid.com/images/logo.ico",
             "setupIcon": "./logo.ico",
             "loadingGif": "./loading.gif"
@@ -76,8 +86,10 @@
     "@electron-forge/maker-deb": "6.0.0-beta.33",
     "@electron-forge/maker-rpm": "6.0.0-beta.33",
     "@electron-forge/maker-squirrel": "6.0.0-beta.33",
+    "@electron-forge/maker-wix": "^6.0.0-beta.39",
     "@electron-forge/maker-zip": "6.0.0-beta.33",
     "electron": "5.0.4",
-    "electron-prebuilt-compile": "4.0.0"
+    "electron-prebuilt-compile": "4.0.0",
+    "electron-wix-msi": "^2.1.1"
   }
 }
