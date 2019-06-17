@@ -97,18 +97,6 @@ function setupTray() {
 ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender )
 
 function handleSecondInstance(){
-  // const isSecondInstance = app.makeSingleInstance((commandLine, workingDirectory) => {
-  //     if (appWindow) {
-  //         if (appWindow.isMinimized()) appWindow.restore()
-  //         appWindow.show()
-  //         appWindow.focus()
-  //     }
-  // })
-
-  // if (isSecondInstance) {
-  //     app.quit()
-  // }
-
   if (!app.requestSingleInstanceLock()) return app.quit()
 
   app.on('second-instance', (event, commandLine, workingDirectory) => {
