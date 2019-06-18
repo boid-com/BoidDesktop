@@ -3,6 +3,7 @@ const msg = document.getElementById( 'loadingmsg' )
 var initial = true
 
 webview.addEventListener( 'dom-ready', () => {
+  webview.openDevTools()
   if ( !initial ) return
   initial = false
   webview.setZoomLevel( 0 )

@@ -1,0 +1,6 @@
+const fs = require('fs-extra')
+const os = require('os')
+fs.emptyDirSync('../TEMP')
+fs.copySync('.','../TEMP')
+if (os.platform() === 'win32') require('./prepMake-Win')('../TEMP/')
+else if (os.platform() === 'darwin') require('./prepMake-Mac')('../TEMP/')

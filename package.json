@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "build": "electron-forge package",
-    "make": "electron-forge make",
+    "make": "node util/prepMake.js && electron-forge make ../TEMP  && node util/finishMake.js",
     "make-win":"npm run build; npm run pack-win",
     "pack-mac": "node util/prepMake-Mac.js && electron-forge make --skip-package",
     "pack-win": "node util/prepMake-Win.js && electron-forge make --skip-package",
@@ -21,7 +21,7 @@
     "forge": {
       "packagerConfig": {
         "packageManager": "npm",
-        "asar": false,
+        "asar": true,
         "icon": "./logo",
         "name": "<%= productName %>",
         "appCopyright": "Boid Inc.",
@@ -40,10 +40,7 @@
         },
         {
           "name": "@electron-forge/maker-zip",
-          "platforms": [
-            "darwin",
-            "win32"
-          ]
+          "platforms": []
         },
         {
           "name": "@electron-forge/maker-deb",

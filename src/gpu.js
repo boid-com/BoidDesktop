@@ -236,7 +236,7 @@ var gpu = {
     async install () {
       gpu.emit('status', 'Installing Trex...')
       try {
-        fs.ensureDir(path.join(RESOURCEDIR, 'trex.zip'))
+        await fs.ensureDir(path.join(RESOURCEDIR, 'trex.zip'))
         const result = await gpu.unzip(path.join(RESOURCEDIR, 'trex.zip'), TREXPATH)
         console.log(result)
         // gpu.emit( 'status', result )
