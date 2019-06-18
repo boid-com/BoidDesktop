@@ -33,7 +33,6 @@ app.on( 'ready', async () => {
   setupWindow()
 })
 
-
 async function setupWindow() {
   appWindow = new BrowserWindow({
     width: 450,
@@ -42,7 +41,7 @@ async function setupWindow() {
     resizable: false,
     maximizable: false,
     fullscreenable: false,
-    title: 'Boid Desktop',
+    title: 'Boid Desktop ' + app.getVersion(),
     frame: true,
     webPreferences:{
       nodeIntegration:false,

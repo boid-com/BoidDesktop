@@ -24,7 +24,7 @@ function init(appWindow) {
     if (!cfg.get('config.startMinimized')) appWindow.show()
   })
   setupGlobalIPC()
-  appWindow.on('minimize',e=>{e.preventDefault(),appWindow.hide()})
+  // appWindow.on('minimize',e=>{e.preventDefault(),appWindow.hide()})
   appWindow.on('close', e => {
     if (isQuiting) return appWindow = null 
     e.preventDefault()

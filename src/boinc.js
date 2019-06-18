@@ -25,7 +25,7 @@ var RESOURCEDIR = path.join(__dirname, '../')
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
 function ec(error){
   console.error(error)
-  ipcMain.emit('error', error)
+  boinc.send('error',{date:Date.now(),error})
 }
 
 var spawnConfig = {
@@ -34,16 +34,21 @@ var spawnConfig = {
 } 
 
 async function setupIPC(funcName) {
-  console.log(funcName)
-  const channel = 'boinc.' + funcName
-  console.log(channel)
+  try {
+    console.log(funcName)
+    const channel = 'boinc.' + funcName
+    console.log(channel)
+  
+    ipcMain.on(channel, async (event, arg) => {
+      ipc.init(event.sender,'boinc')
+      console.log('IPC Event Received:', channel + '()')
+      const emitChannel = channel.split('boinc.')[1]
+      boinc.send(emitChannel, await (eval(channel)(arg)))
+    })
+  } catch (error) {
+    console.error(error)
+  }
 
-  ipcMain.on(channel, async (event, arg) => {
-    ipc.init(event.sender,'boinc')
-    console.log('IPC Event Received:', channel + '()')
-    const emitChannel = channel.split('boinc.')[1]
-    boinc.send(emitChannel, await (eval(channel)(arg)))
-  })
 }
 
 

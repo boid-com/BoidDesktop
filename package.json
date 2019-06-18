@@ -1,15 +1,16 @@
 {
   "name": "boid",
   "productName": "Boid",
-  "version": "0.0.5",
+  "version": "0.0.51",
   "description": "Desktop Application for the Boid platform",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
     "build": "electron-forge package",
     "make": "electron-forge make",
-    "pack-mac": "xattr -cr * && rm out/Boid-darwin-x64/Boid.app/Contents/Resources/app/node_modules/electron-sudo/dist/bin/applet.app/LICENSE && rm /Users/boid/Dev/boidDev/electoboid/out/Boid-darwin-x64/Boid.app/Contents/Resources/app/node_modules/electron-sudo/src/bin/applet.app/LICENSE && electron-osx-sign out/Boid-darwin-x64/Boid.app/ && electron-forge make --skip-package",
-    "pack-win": "electron-forge make --skip-package",
+    "make-win":"npm run build; npm run pack-win",
+    "pack-mac": "node util/prepMake-Mac.js && electron-forge make --skip-package",
+    "pack-win": "node util/prepMake-Win.js && electron-forge make --skip-package",
     "publish": "electron-forge publish",
     "lint": "eslint src --color"
   },
@@ -28,23 +29,14 @@
       },
       "makers": [
         {
-          "name": "@electron-forge/maker-wix",
-          "config": {
-            "manufacturer": "Boid Inc.",
-            "description": "<%= description %>",
-            "ui":{
-              
-            }
-          }
-        },
-        {
           "name": "@electron-forge/maker-squirrel",
           "config": {
             "name": "Boid",
             "iconUrl": "https://assets.boid.com/images/logo.ico",
             "setupIcon": "./logo.ico",
-            "loadingGif": "./loading.gif"
-          }
+            "loadingGif":"./loading.gif"
+          },
+          "platforms":["win32"]
         },
         {
           "name": "@electron-forge/maker-zip",

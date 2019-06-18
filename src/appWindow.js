@@ -1,13 +1,8 @@
-// const {ipcRenderer} = require('electron')
 const webview = document.getElementById( 'webview' )
 const msg = document.getElementById( 'loadingmsg' )
-// const isDev = require( 'electron-is-dev' )
 var initial = true
 
 webview.addEventListener( 'dom-ready', () => {
-  webview.openDevTools()
-  console.log('windowInitialized')
-  // ipcRenderer.on('openConsole',() => webview.openDevTools())
   if ( !initial ) return
   initial = false
   webview.setZoomLevel( 0 )

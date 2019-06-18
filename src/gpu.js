@@ -32,22 +32,26 @@ function isObject (value) {
 }
 
 async function setupIPC (methods, prefix1, prefix2) {
-  if(!methods) return
-  if(!prefix2) prefix2 = ''
-  else prefix2 = prefix2 + '.'
-  for(var methodName of Object.keys(methods)) {
-    if(!isFunction(methods[methodName])) await setupIPC(methods[methodName], prefix1, methodName)
-    if(isObject(methods[methodName])) continue
-    console.log(methods[methodName])
-    const channel = 'gpu.' + prefix1 + '.' + prefix2 + methodName
-    console.log(channel)
-
-    ipcMain.on(channel, async (event, arg) => {
-      gpu.window = event.sender
-      console.log('IPC Event Received:', channel + '()')
-      const emitChannel = channel.split('gpu.')[1]
-      gpu.emit(emitChannel, await (eval(channel)(arg)))
-    })
+  try {
+    if(!methods) return
+    if(!prefix2) prefix2 = ''
+    else prefix2 = prefix2 + '.'
+    for(var methodName of Object.keys(methods)) {
+      if(!isFunction(methods[methodName])) await setupIPC(methods[methodName], prefix1, methodName)
+      if(isObject(methods[methodName])) continue
+      console.log(methods[methodName])
+      const channel = 'gpu.' + prefix1 + '.' + prefix2 + methodName
+      console.log(channel)
+  
+      ipcMain.on(channel, async (event, arg) => {
+        gpu.window = event.sender
+        console.log('IPC Event Received:', channel + '()')
+        const emitChannel = channel.split('gpu.')[1]
+        gpu.emit(emitChannel, await (eval(channel)(arg)))
+      })
+    }
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -69,8 +73,13 @@ var gpu = {
 
   },
   emit (channel, data, event) {
-    if(gpu.window) gpu.window.send('gpu.' + channel, data)
-    else console.log('window now set!')
+    try {
+      if(gpu.window) gpu.window.send('gpu.' + channel, data)
+      else console.log('window not set!')
+    } catch (error) {
+      console.error(error)
+    }
+
 
     console.log('gpuEmit:', channel, data)
   },
@@ -256,7 +265,7 @@ var gpu = {
         gpu.shouldBeRunning = true
         cfg.set('state.gpu.toggle', true)
         if(gpu.trex.miner && gpu.trex.miner.killed === false) return gpu.trex.miner.kill()
-        gpu.trex.miner = spawn('./t-rex.exe', ['-c', path.join(TREXPATH, 'boid-trex-config.json')], {
+        gpu.trex.miner = spawn('t-rex.exe', ['-c', path.join(TREXPATH, 'boid-trex-config.json')], {
           silent: false,
           cwd: TREXPATH,
           shell: false,
@@ -366,7 +375,6 @@ var gpu = {
     async install () {
       gpu.emit('status', 'Installing Wildrig...')
       try {
-        await fs.remove(WILDRIGPATH)
         await fs.ensureDir(WILDRIGPATH)
         const result = await gpu.unzip(path.join(RESOURCEDIR, 'wildrig.zip'), WILDRIGPATH)
         console.log(result)
@@ -395,7 +403,7 @@ var gpu = {
         gpu.shouldBeRunning = true
         cfg.set('state.gpu.toggle', true)
         if(gpu.wildrig.miner && gpu.wildrig.miner.killed === false) return gpu.wildrig.miner.kill()
-        gpu.wildrig.miner = spawn('./wildrig.exe', await gpu.wildrig.config.read(), {
+        gpu.wildrig.miner = spawn('wildrig.exe', await gpu.wildrig.config.read(), {
           silent: false,
           cwd: WILDRIGPATH,
         })
