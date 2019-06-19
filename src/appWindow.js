@@ -1,26 +1,25 @@
-const webview = document.getElementById( 'webview' )
-const msg = document.getElementById( 'loadingmsg' )
+const webview = document.getElementById('webview')
+const msg = document.getElementById('loadingmsg')
 var initial = true
 
-webview.addEventListener( 'dom-ready', () => {
-  webview.openDevTools()
-  if ( !initial ) return
+webview.addEventListener('dom-ready', () => {
+  // webview.openDevTools()
+  if(!initial) return
   initial = false
-  webview.setZoomLevel( 0 )
+  webview.setZoomLevel(0)
 
-  webview.addEventListener( 'did-fail-load', ( e, string ) => {
-    console.log( 'Failed to load' )
+  webview.addEventListener('did-fail-load', (e, string) => {
+    console.log('Failed to load')
     msg.style.display = "block"
-    setTimeout( () => {
+    setTimeout(() => {
       webview.reload()
-    }, 3000 )
-
-  } )
-  webview.addEventListener( 'page-title-updated', ( e ) => {
+    }, 3000)
+  })
+  webview.addEventListener('page-title-updated', (e) => {
     msg.style.display = "none"
-    console.log( e )
-  } )
-  return webview.loadURL( 'https://app.boid.com/desktop2' )
-  if ( isDev ) webview.loadURL( 'http://localhost:8080/desktop2' )
-  else webview.loadURL( 'https://app.boid.com/desktop2' )
-} )
+    console.log(e)
+  })
+  return webview.loadURL('https://app.boid.com/desktop2')
+  if(isDev) webview.loadURL('http://localhost:8080/desktop2')
+  else webview.loadURL('https://app.boid.com/desktop2')
+})

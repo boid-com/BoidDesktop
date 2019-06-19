@@ -34,7 +34,13 @@
 </head>
 <body style="overflow:hidden; position: relative;" >
   <h4 id="loadingmsg"> waiting for internet...</h4>
-  <webview id="webview" style=" z-index: 1; background:white; position: absolute; top:-8px; bottom:-8px; right:-8px; left: -8px; " preload="./preload.js" src="data:text/plain,Loading..."></webview>
+  <webview 
+  id="webview" 
+  style=" z-index: 1; background:white; position: absolute; top:-8px; bottom:-8px; right:-8px; left: -8px; " 
+  preload="./preload.js" 
+  enableremotemodule="false" 
+  src="data:text/plain,Loading...">
+  </webview>
 </body>
 
 <script src="./appWindow.js"></script>

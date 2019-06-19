@@ -8,7 +8,7 @@
     "start": "electron-forge start",
     "build": "electron-forge package",
     "make": "node util/prepMake.js && electron-forge make ../TEMP  && node util/finishMake.js",
-    "make-win":"npm run build; npm run pack-win",
+    "make-win": "npm run build; npm run pack-win",
     "pack-mac": "node util/prepMake-Mac.js && electron-forge make --skip-package",
     "pack-win": "node util/prepMake-Win.js && electron-forge make --skip-package",
     "publish": "electron-forge publish",
@@ -25,7 +25,8 @@
         "icon": "./logo",
         "name": "<%= productName %>",
         "appCopyright": "Boid Inc.",
-        "appBundleId": "com.boid.macos"
+        "appBundleId": "com.boid.macos",
+        "osxSign": true
       },
       "makers": [
         {
@@ -34,9 +35,11 @@
             "name": "Boid",
             "iconUrl": "https://assets.boid.com/images/logo.ico",
             "setupIcon": "./logo.ico",
-            "loadingGif":"./loading.gif"
+            "loadingGif": "./loading.gif"
           },
-          "platforms":["win32"]
+          "platforms": [
+            "win32"
+          ]
         },
         {
           "name": "@electron-forge/maker-zip",
