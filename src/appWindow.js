@@ -13,13 +13,11 @@ webview.addEventListener('dom-ready', () => {
     msg.style.display = "block"
     setTimeout(() => {
       webview.reload()
-    }, 3000)
+    }, 13000)
   })
   webview.addEventListener('page-title-updated', (e) => {
     msg.style.display = "none"
     console.log(e)
   })
-  return webview.loadURL('https://app.boid.com/desktop2')
-  if(isDev) webview.loadURL('http://localhost:8080/desktop2')
-  else webview.loadURL('https://app.boid.com/desktop2')
+
 })

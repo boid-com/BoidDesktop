@@ -1,4 +1,4 @@
 const fs = require('fs-extra')
-fs.removeSync('./out')
+try {fs.removeSync('./out')} catch (error) {console.error(error)}
 fs.copySync('../TEMP/out','./out') 
 fs.removeSync('../TEMP')

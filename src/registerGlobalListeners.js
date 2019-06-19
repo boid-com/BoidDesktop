@@ -3,6 +3,8 @@ const platform = require( 'os' ).platform()
 const cfg = require( 'electron-settings' )
 var gpu = require('./gpu')
 var boinc = require('./boinc')
+const isDev = require('electron-is-dev')
+
 var isQuiting
 
 function init(appWindow) {
@@ -16,11 +18,12 @@ function init(appWindow) {
   })
   app.on('activate', () => appWindow.show)
   appWindow.on('ready-to-show', () => {
-    if (platform === 'darwin') appWindow.setSize(450, 655), app.dock.show()
-    else appWindow.setSize(460, 665)
+    if (platform === 'darwin') {
+      appWindow.setSize(450, 655)
+      app.dock.show()}
+    else {appWindow.setSize(460, 665)}
     appWindow.setAutoHideMenuBar(true)
     appWindow.center()
-
     if (!cfg.get('config.startMinimized')) appWindow.show()
   })
   setupGlobalIPC()
@@ -31,6 +34,8 @@ function init(appWindow) {
     appWindow.hide()
     if ( platform === 'darwin' ) app.dock.hide()
   })
+  if (isDev) appWindow.webContents.executeJavaScript("webview.loadURL('http://localhost:8080/desktop2')")
+  else appWindow.webContents.executeJavaScript("webview.loadURL('https://app.boid.com/desktop2')")
 }
 
 function setupGlobalIPC(){
@@ -39,6 +44,10 @@ function setupGlobalIPC(){
   })
   ipcMain.on('openDirectory', (event, dir) => {
     return shell.openItem(dir)
+  })
+  ipcMain.on('restart', (event,debug) =>{
+    if (debug) app.relaunch({ args: process.argv.slice(1).concat(['--enable-logging']) })
+    return app.exit()
   })
 }
 

@@ -35,7 +35,7 @@ app.on('ready', async () => {
 async function setupWindow () {
   appWindow = new BrowserWindow({
     width: 450,
-    height: 600,
+    height: 655,
     show: false,
     resizable: false,
     maximizable: false,

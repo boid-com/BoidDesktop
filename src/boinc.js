@@ -26,7 +26,8 @@ else var RESOURCEDIR = path.join(__dirname, '../../')
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
 function ec(error){
   console.error(error)
-  boinc.send('error',{date:Date.now(),error})
+  if (ipc.ipc) boinc.send('error',{date:Date.now(),error})
+  else ipcMain.emit('error',{date:Date.now(),error})
 }
 
 var spawnConfig = {
@@ -138,7 +139,9 @@ boinc.start = async (data) => {
     var exe
     if (thisPlatform === 'win32') exe = 'boinc.exe'
     else exe = './boinc'
-    boinc.process = spawn(exe, ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info'], {
+    var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
+    if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
+    boinc.process = spawn(exe, params, {
       silent: false,
       cwd: BOINCPATH,
       shell: false,
@@ -262,7 +265,7 @@ boinc.install = async () => {
   
 }
 boinc.prefs = {
-  default: { run_if_user_active: '1', cpu_usage_limit: '80.0', max_ncpus_pct: '100', idle_time_to_run: '3.0', ram_max_used_busy_pct: '50.0', ram_max_used_idle_pct: '75.0',run_on_batteries:'1',run_if_user_active:'1' },
+  default: { run_if_user_active: '1', cpu_usage_limit: '100.0', max_ncpus_pct: '100', idle_time_to_run: '3.0', ram_max_used_busy_pct: '50.0', ram_max_used_idle_pct: '75.0',run_on_batteries:'1',run_if_user_active:'1' },
   async init(cb) {
     await boinc.prefs.write(boinc.prefs.default)
     if (cb) return cb()
@@ -340,7 +343,7 @@ boinc.state = {
   async getDevice () {
     try {
       const fullState = await this.getAll()
-      if(!fullState) throw ('null state')
+      if(!fullState) return null
       var state = fullState.client_state.host_info[0]
       const thisDevice = {
         name: state.domain_name[0],
