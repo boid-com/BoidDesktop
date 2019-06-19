@@ -1,12 +1,9 @@
 const fs = require('fs-extra')
-const exec = require('child_process').execSync
+  const exec = require('child_process').execSync
 const resolve = require('path').resolve
 
 const globalRemove = require('./globalRemove.json')
 const remove = [
-  'trex.zip',
-  'wildrig.zip',
-  'BOINC-Win32.zip',
   'loading.gif'
 ]
 const finalRemove = globalRemove.concat(remove)

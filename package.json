@@ -7,7 +7,7 @@
   "scripts": {
     "start": "electron-forge start",
     "build": "electron-forge package",
-    "make": "node util/prepMake.js && electron-forge make ../TEMP  && node util/finishMake.js",
+    "make": "node util/prepMake.js && electron-forge package ../TEMP  && node util/finishMake.js && node util/postPack.js && electron-forge make --skip-package",
     "make-win": "npm run build; npm run pack-win",
     "pack-mac": "node util/prepMake-Mac.js && electron-forge make --skip-package",
     "pack-win": "node util/prepMake-Win.js && electron-forge make --skip-package",
@@ -26,7 +26,7 @@
         "name": "<%= productName %>",
         "appCopyright": "Boid Inc.",
         "appBundleId": "com.boid.macos",
-        "osxSign": true
+        "osxSign": false
       },
       "makers": [
         {
@@ -86,6 +86,7 @@
     "@electron-forge/maker-wix": "^6.0.0-beta.39",
     "@electron-forge/maker-zip": "6.0.0-beta.33",
     "electron": "5.0.4",
+    "electron-osx-sign": "^0.4.11",
     "electron-prebuilt-compile": "4.0.0",
     "electron-wix-msi": "^2.1.1"
   }

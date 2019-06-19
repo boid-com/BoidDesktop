@@ -3,7 +3,6 @@ const globalRemove = require('./globalRemove.json')
 const remove = [
   "logo.icns",
   "Mac_SA_Secure.sh",
-  "BOINC.zip",
 ]
 
 const finalRemove = globalRemove.concat(remove)

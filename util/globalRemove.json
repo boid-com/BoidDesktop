@@ -5,5 +5,9 @@
   ".DS_Store",
   "logo.icns",
   "util",
-  "out"
+  "out",
+  "trex.zip",
+  "wildrig.zip",
+  "BOINC-Win32.zip",
+  "BOINC.zip"
 ]

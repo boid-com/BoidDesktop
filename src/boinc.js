@@ -16,11 +16,12 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 
-
-if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
-else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
+var HOMEPATH = path.join(app.getPath('home'), '.Boid')
+// if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
+// else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 var BOINCPATH = path.join(HOMEPATH, 'BOINC')
-var RESOURCEDIR = path.join(__dirname, '../')
+if (isDev) var RESOURCEDIR = path.join(__dirname, '../')
+else var RESOURCEDIR = path.join(__dirname, '../../')
 
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
 function ec(error){
@@ -137,13 +138,12 @@ boinc.start = async (data) => {
     var exe
     if (thisPlatform === 'win32') exe = 'boinc.exe'
     else exe = './boinc'
-    boinc.process = spawn(exe, ['-dir', BOINCPATH, '-allow_multiple_clients', '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info'], {
+    boinc.process = spawn(exe, ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info'], {
       silent: false,
       cwd: BOINCPATH,
       shell: false,
       detached: true,
       env: null,
-
     })
     setTimeout(()=>boinc.send('started'),1000)
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
