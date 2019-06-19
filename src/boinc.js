@@ -59,8 +59,8 @@ var boinc = {
 }
 boinc.killExisting = async () => {
   try {
-    await boinc.stop()
     if ( boinc.process) {
+      await boinc.stop()
       process.kill(-boinc.process.pid)
       boinc.process.kill()
     }
@@ -104,27 +104,26 @@ console.log('get UI')
 }
 
 boinc.reset = async () => {
-  await boinc.stop()
-  await fs.remove(path.join(BOINCPATH, 'remote_hosts.cfg'))
+  boinc.killExisting()
+  try {await fs.remove(BOINCPATH)}catch(error){if(ec)ec(error)}
   app.relaunch()
   app.exit()
 }
 boinc.openDirectory = async () => {
   shell.openItem(BOINCPATH)
 }
-
+boinc.starting = false
 boinc.start = async (data) => {
+  if (boinc.starting) return
+  boinc.starting = true
   try {
+     boinc.killExisting()
     console.log('start BOINC')
     const checkInstall = await boinc.checkInstalled()
-    console.log(checkInstall)
-    if(!checkInstall) {
-      const installed = await boinc.install()
-      if (installed) return boinc.start()
-      else return boinc.send('message', 'Unable to start due to install error.')
-    }
+    if (!checkInstall) await boinc.install()
   } catch (error) {
     ec(error)
+    boinc.starting = false
     boinc.stop()
   }
   await boinc.killExisting()
@@ -137,26 +136,28 @@ boinc.start = async (data) => {
     var exe
     if (thisPlatform === 'win32') exe = 'boinc.exe'
     else exe = './boinc'
-    boinc.process = spawn(exe, ['-dir', BOINCPATH, '-allow_multiple_clients', '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info'], {
+    boinc.process = spawn(exe, ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info'], {
       silent: false,
       cwd: BOINCPATH,
       shell: false,
       detached: true,
       env: null,
-
     })
     setTimeout(()=>boinc.send('started'),1000)
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
     boinc.process.stderr.on('data', data => ipc.send('error', data.toString()))
     boinc.process.on('exit', (code, signal) => {
+      boinc.starting = false
       console.log('detected close code:', code, signal)
       console.log('should be running', boinc.shouldBeRunning)
       boinc.process.removeAllListeners()
       boinc.process = null
       if(boinc.shouldBeRunning) {
         boinc.send('message', 'The Miner stopped and Boid is restarting it')
+        boinc.starting = false
         boinc.start()
       } else {
+        boinc.starting = false
         boinc.send('message', 'BOINC was stopped')
         boinc.send('status', 'Stopped')
         boinc.send('toggle', false)
@@ -172,6 +173,7 @@ boinc.stop = async (data) => {
   // boinc.process.kill()
   await boinc.cmd('quit')
   await sleep(5000)
+  boinc.starting = false
   boinc.shouldBeRunning = false
   return sleep(5000)
 }
@@ -227,7 +229,7 @@ boinc.install = async () => {
   try {
     if (boinc.initializing) return
     boinc.initializing = true
-    await boinc.stop()
+    await boinc.killExisting()
     await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
     if (thisPlatform === 'win32') return boinc.unzip()
     await fs.ensureDir(BOINCPATH)
@@ -262,7 +264,7 @@ boinc.install = async () => {
   
 }
 boinc.prefs = {
-  default: { run_if_user_active: '1', cpu_usage_limit: '80.0', max_ncpus_pct: '100', idle_time_to_run: '3.0', ram_max_used_busy_pct: '50.0', ram_max_used_idle_pct: '75.0',run_on_batteries:'1',run_if_user_active:'1' },
+  default: { run_if_user_active: '1', cpu_usage_limit: '100.0', max_ncpus_pct: '100', idle_time_to_run: '3.0', ram_max_used_busy_pct: '50.0', ram_max_used_idle_pct: '75.0',run_on_batteries:'1',run_if_user_active:'1' },
   async init(cb) {
     await boinc.prefs.write(boinc.prefs.default)
     if (cb) return cb()

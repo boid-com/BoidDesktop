@@ -1,4 +1,7 @@
 const fs = require('fs-extra')
+const exec = require('child_process').execSync
+const resolve = require('path').resolve
+
 const globalRemove = require('./globalRemove.json')
 const remove = [
   'trex.zip',
@@ -12,7 +15,7 @@ function init(baseDir){
   for (data of finalRemove){
     fs.removeSync(baseDir + data)
   }
-
+  exec("find . -name '.DS_Store' -type f -delete",{cwd:resolve(baseDir)})
 }
 
 module.exports = init
