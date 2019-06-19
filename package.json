@@ -30,10 +30,6 @@
       },
       "makers": [
         {
-          "name": "@electron-forge/maker-dmg",
-          "config": {}
-        },
-        {
           "name": "@electron-forge/maker-squirrel",
           "config": {
             "name": "Boid",
@@ -80,7 +76,6 @@
   "devDependencies": {
     "@electron-forge/cli": "6.0.0-beta.33",
     "@electron-forge/maker-deb": "6.0.0-beta.33",
-    "@electron-forge/maker-dmg": "^6.0.0-beta.39",
     "@electron-forge/maker-rpm": "6.0.0-beta.33",
     "@electron-forge/maker-squirrel": "6.0.0-beta.33",
     "@electron-forge/maker-wix": "^6.0.0-beta.39",
