@@ -1,4 +1,5 @@
 const {ipcMain} = require('electron')
+const log = require('electron-log')
 
 var wrapper = {
 prefix:"",
@@ -10,11 +11,12 @@ init(ipc,prefix){
 async send ( channel, data) {
   try {
     channel = this.prefix + '.' + channel
-    console.log('Emit:', channel, data )
+    if (channel === 'boinc.state.getUI' && data) log.info('Emit:', channel, 'Success')
+    else log.info('Emit:',channel,data)
     this.ipc.send(channel,data)
     return true
   } catch (error) {
-    console.error(error)
+    log.error(error)
     ipcMain.emit('error',error)
     return false
   }
@@ -22,10 +24,10 @@ async send ( channel, data) {
 async on ( channel, func) {
   try {
     channel = this.prefix + '.' + channel
-    console.log('On:', channel, func )
+    log.info('On:', channel, func )
     ipcMain.on(channel,(event,data,data2) => func(data,data2))
   } catch (error) {
-    console.error(error)
+    log.error(error)
     ipcMain.emit('error',error)
   }
 

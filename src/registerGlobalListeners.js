@@ -4,13 +4,14 @@ const cfg = require( 'electron-settings' )
 var gpu = require('./gpu')
 var boinc = require('./boinc')
 const isDev = require('electron-is-dev')
+const log = require('electron-log')
 
 var isQuiting
 
 function init(appWindow) {
   ipcMain.on('gpu.init',gpu.init)
   ipcMain.on('boinc.init',boinc.init)
-  console.log('init listeners')
+  log.info('init listeners')
   app.on('before-quit', async ()=>{
     isQuiting = true
     if (appWindow) appWindow.close()

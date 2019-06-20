@@ -15,6 +15,7 @@ var builder = new xml2js.Builder({ headless: true })
 const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
+const log = require('electron-log')
 
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
@@ -25,7 +26,7 @@ else var RESOURCEDIR = path.join(__dirname, '../../')
 
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
 function ec(error){
-  console.error(error)
+  log.error(error)
   if (ipc.ipc) boinc.send('error',{date:Date.now(),error})
   else ipcMain.emit('error',{date:Date.now(),error})
 }
@@ -37,18 +38,16 @@ var spawnConfig = {
 
 async function setupIPC(funcName) {
   try {
-    console.log(funcName)
     const channel = 'boinc.' + funcName
-    console.log(channel)
-  
+    log.info(funcName,channel)
     ipcMain.on(channel, async (event, arg) => {
       ipc.init(event.sender,'boinc')
-      console.log('IPC Event Received:', channel + '()')
+      log.info('IPC Event Received:', channel + '()')
       const emitChannel = channel.split('boinc.')[1]
       boinc.send(emitChannel, await (eval(channel)(arg)))
     })
   } catch (error) {
-    console.error(error)
+    log.error(error)
   }
 
 }
@@ -68,9 +67,10 @@ boinc.killExisting = async () => {
     }
     if (thisPlatform === 'win32') await exec('Taskkill /IM boinc.exe /F')
     else await exec('pkill -9 boinc')
-    console.log('removed existing')
+    log.info('removed existing')
   } catch (error) {
-    console.log('No Existing processes')
+    log.error(error)
+    log.info('No Existing processes')
   }
 }
 
@@ -101,10 +101,6 @@ boinc.init = async (event) => {
   }
 }
 
-boinc.getUI = async () => {
-console.log('get UI')
-}
-
 boinc.reset = async () => {
   await boinc.stop()
   await fs.remove(path.join(BOINCPATH, 'remote_hosts.cfg'))
@@ -117,9 +113,7 @@ boinc.openDirectory = async () => {
 
 boinc.start = async (data) => {
   try {
-    console.log('start BOINC')
     const checkInstall = await boinc.checkInstalled()
-    console.log(checkInstall)
     if(!checkInstall) {
       const installed = await boinc.install()
       if (installed) return boinc.start()
@@ -152,8 +146,8 @@ boinc.start = async (data) => {
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
     boinc.process.stderr.on('data', data => ipc.send('error', data.toString()))
     boinc.process.on('exit', (code, signal) => {
-      console.log('detected close code:', code, signal)
-      console.log('should be running', boinc.shouldBeRunning)
+      log.info('detected close code:', code, signal)
+      log.info('should be running', boinc.shouldBeRunning)
       boinc.process.removeAllListeners()
       boinc.process = null
       if(boinc.shouldBeRunning) {
@@ -182,9 +176,9 @@ boinc.stop = async (data) => {
 boinc.unzip = async () => {
   var unzipper = new unzip(path.join(RESOURCEDIR, 'BOINC-Win32.zip'))
   return new Promise(async (resolve, reject) => {
-    console.log('STARTING TO UNZIP')
+    log.info('STARTING TO UNZIP')
     unzipper.on('error', function (err) {
-      console.error('Caught an error', err)
+      log.error('Caught an error', err)
       reject(err)
     })
 
@@ -194,7 +188,7 @@ boinc.unzip = async () => {
     })
 
     unzipper.on('progress', function (fileIndex, fileCount) {
-      console.log('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
+      log.info('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
     })
 
     unzipper.extract({
@@ -219,9 +213,9 @@ boinc.cmd = async (cmd) => {
     var exe
     if (thisPlatform === "win32") exe = 'boinccmd'
     else exe = './boinccmd'
-    console.log('BOINC.CMD',cmd)
+    log.info('BOINC.CMD',cmd)
     const result = (await exec(exe + ` --host localhost --passwd ` + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
-    console.log(result)
+    log.info(result)
     return result
   }catch(error){if(ec)ec(error)}
 }
@@ -241,21 +235,21 @@ boinc.install = async () => {
     var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
     var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
     var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done' + '"'
-    console.log(cmd)
+    log.info(cmd)
     return new Promise(async function (resolve, reject) {
       sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
         if (err) reject(err)
         if (stdout) {
-          console.log(stdout)
+          log.info(stdout)
           if (stdout.indexOf('done') > -1) {
-            console.log('SANDBOX FINISHED')
+            log.info('SANDBOX FINISHED')
             boinc.intializing = false
             await boinc.prefs.init()
             resolve(stdout)
           }
         }
         if (stderr) {
-          // console.log(stderr)
+          // log.info(stderr)
           reject(stderr)
         }
       })
@@ -278,7 +272,7 @@ boinc.prefs = {
       const prefs = (await parseXML(path.join(BOINCPATH, 'global_prefs_override.xml'))).global_preferences
       return prefs
     } catch (error) {
-      console.error(error)
+      log.error(error)
        return boinc.prefs.init(boinc.prefs.read)
      } 
   } 
@@ -289,7 +283,7 @@ boinc.config = {
   async verify () {
     await fs.ensureDir(BOINCPATH)
     const result = await fs.exists(boinc.config.file).catch(ec)
-    console.log('verify config file',result)
+    log.info('verify config file',result)
     if(!result) boinc.send('status', 'cpu config missing')
     return result
   },
@@ -308,12 +302,12 @@ boinc.config = {
   },
   async read () {
     try {
-      console.log('read config', boinc.config.file)
+      log.info('read config', boinc.config.file)
       var config = await fs.readJson(boinc.config.file)
       if (Object.keys(config).length == 0) throw('Config missing')
       return config
     } catch (error) {
-      console.log('reset config')
+      log.info('reset config')
       await fs.remove(boinc.config.file)
       await boinc.config.write({autoStart:false})
       ec(error)

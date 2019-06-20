@@ -6,9 +6,11 @@ const ipc = require('./ipcWrapper')()
 const boinc = require('./boinc')
 const os = require('os')
 var AutoLaunch = require('auto-launch')
+const log = require('electron-log')
+
 var launcher = new AutoLaunch({name:"Boid"})
 function ec(error) { 
-  console.error(error)
+  log.error(error)
   ipcMain.emit('error', error)
 }
 var config = {}
@@ -45,13 +47,11 @@ const defaultConfig = {
 }
 
 async function setupIPC(funcName) {
-  console.log(funcName)
   const channel = 'config.' + funcName
-  console.log(channel)
-
+  log.info(channel)
   ipcMain.on(channel, async (event, arg) => {
     ipc.init(event.sender,'config')
-    console.log('IPC Event Received:', channel + '()')
+    log.info('IPC Event Received:', channel + '()')
     const emitChannel = channel.split('config.')[1]
     config.send(emitChannel, await (eval(channel)(arg)))
   })
@@ -108,12 +108,12 @@ config.get = async function(){
   return cfg.getAll()
 }
 config.setConfig = async function(data){
-  console.log('config set:',data)
+  log.info('config set:',data)
   cfg.set('config',data)
 }
 
   function handlestayAwake(data){
-    console.log('handle stay awake', data)
+    log.info('handle stay awake', data)
     if (data) config.powerBlockerID = powerSaveBlocker.start('prevent-app-suspension') 
     else if (!data && config.powerBlockerID) powerSaveBlocker.stop(config.powerBlockerID)
   }
@@ -125,11 +125,11 @@ config.setConfig = async function(data){
     }catch(error){if(ec)ec(error)}
 
 
-    // console.log('handle add to startup', data)
+    // log.info('handle add to startup', data)
     
     // if (startup != data) app.setLoginItemSettings( {openAtLogin: data} ) 
     // const startup2 = app.getLoginItemSettings().openAtLogin
-    // console.log(startup2)
+    // log.info(startup2)
 
 
   }
@@ -139,7 +139,7 @@ config.setConfig = async function(data){
     cfg.watch('config.addToStartup', handleAddToStartup)
     ipcMain.on('config.initIPC', event => ipc.init(event.sender,'config'))
     ipcMain.once('config.initIPC', event => {
-      console.log('init config ipc')
+      log.info('init config ipc')
       setupIPC('get')
       setupIPC('setConfig')
       ipc.on('getDevice',(data) => ipc.send('getDevice',cfg.get('device')))

@@ -8,6 +8,7 @@ const {
 if(require('electron-squirrel-startup')) { // eslint-disable-line global-require
   app.quit()
 }
+const log = require('electron-log')
 const config = require('./config')
 const path = require('path')
 const os = require('os')
@@ -23,10 +24,8 @@ let tray
 let windowIPC
 
 handleSecondInstance()
-
 ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender)
 app.on('ready', async () => {
-  console.log(app.getPath('appData'))
   config.init()
   setupTray()
   setupWindow()
@@ -60,7 +59,6 @@ function setupTray () {
       label: 'Open Boid',
       click () {
         if(appWindow) {
-          console.log('found existing appWindow')
           appWindow.show()
         } else {
           setupWindow()

@@ -12,6 +12,23 @@ const parseXML = require('xml-to-json-promise').xmlFileToJSON
 const { exec } = require('child-process-promise')
 const jsonfile = require('jsonfile')
 const cfg = require('electron-settings')
+const log = require('electron-log')
+
+
+async function download(url, dest) {
+  var file = fs.createWriteStream(dest)
+  const response = await ax({
+    url,
+    method: 'GET',
+    responseType: 'stream'
+  })
+  response.data.pipe(file)
+  return new Promise((res, rej) => {
+    file.on('finish', res)
+    file.on('error', rej)
+  })
+ 
+}
 
 function dir (dir) { return dir.replace(/(["\s'$`\\])/g, '\\ ') }
 
@@ -41,19 +58,19 @@ async function setupIPC (methods, prefix1, prefix2) {
     for(var methodName of Object.keys(methods)) {
       if(!isFunction(methods[methodName])) await setupIPC(methods[methodName], prefix1, methodName)
       if(isObject(methods[methodName])) continue
-      console.log(methods[methodName])
+      log.info(methods[methodName])
       const channel = 'gpu.' + prefix1 + '.' + prefix2 + methodName
-      console.log(channel)
+      log.info(channel)
   
       ipcMain.on(channel, async (event, arg) => {
         gpu.window = event.sender
-        console.log('IPC Event Received:', channel + '()')
+        log.info('IPC Event Received:', channel + '()')
         const emitChannel = channel.split('gpu.')[1]
         gpu.emit(emitChannel, await (eval(channel)(arg)))
       })
     }
   } catch (error) {
-    console.error(error)
+    log.error(error)
   }
 }
 
@@ -69,7 +86,7 @@ var gpu = {
       app.relaunch()
       app.exit()
     } catch (error) {
-      console.error(error)
+      log.error(error)
       gpu.emit("error", error)
     }
 
@@ -77,17 +94,17 @@ var gpu = {
   emit (channel, data, event) {
     try {
       if(gpu.window) gpu.window.send('gpu.' + channel, data)
-      else console.log('window not set!')
+      else log.info('window not set!')
     } catch (error) {
-      console.error(error)
+      log.error(error)
     }
 
 
-    console.log('gpuEmit:', channel, data)
+    log.info('gpuEmit:', channel, data)
   },
   async on (channel, func) {
     channel = 'gpu.' + channel
-    console.log('ipcOn:', channel, func)
+    log.info('ipcOn:', channel, func)
     return await ipcMain.on(channel, async (event, data) => {
       return await func(data)
     })
@@ -95,7 +112,7 @@ var gpu = {
   config: {
     async verify () {
       await fs.ensureDir(GPUPATH)
-      const result = await fs.exists(path.join(GPUPATH, 'boid-gpu-config.json')).catch(console.log)
+      const result = await fs.exists(path.join(GPUPATH, 'boid-gpu-config.json')).catch(log.info)
       if(!result) gpu.emit('status', 'gpu config missing')
       return result
     },
@@ -113,7 +130,7 @@ var gpu = {
 
         return gpu.config.read()
       } catch (error) {
-        console.error(error)
+        log.error(error)
         gpu.emit('error', error)
         return error
       }
@@ -124,7 +141,7 @@ var gpu = {
         return config
       } catch (error) {
         await fs.remove(path.join(GPUPATH, 'boid-gpu-config.json'))
-        console.log(error)
+        log.info(error)
         gpu.emit('error', error)
         return null
       }
@@ -134,7 +151,7 @@ var gpu = {
         await jsonfile.writeFile(path.join(path.join(GPUPATH, 'boid-gpu-config.json')), config)
         gpu.emit('config.read', await gpu.config.read())
       } catch (error) {
-        console.error('config write error')
+        log.error('config write error')
       }
     }
   },
@@ -168,7 +185,7 @@ var gpu = {
             cwd: GPUPATH
           })
         } else {
-          console.log('GPU has changed or has not been initialized')
+          log.info('GPU has changed or has not been initialized')
           gpu.emit('status', 'detecting hardware')
           await fs.writeFile(path.join(GPUPATH, 'gpuName.txt'), getName)
           await exec(`dxdiag /whql:off /x ${path.join(GPUPATH,'dxdiag.xml')}`, {
@@ -185,10 +202,10 @@ var gpu = {
             thisDevice.name = device.DisplayDevice[0].ChipType[0]
             gpus.push(thisDevice)
           }
-          // console.log('returning GPUs',gpus)
+          // log.info('returning GPUs',gpus)
           return gpus
         } catch (error) {
-          console.error(error)
+          log.error(error)
           gpu.emit('error', 'Problem reading GPU Devices, trying again.')
           await fs.remove(path.join(GPUPATH, 'dxdiag.xml'))
           await fs.remove(path.join(GPUPATH, 'gpuName.txt'))
@@ -211,19 +228,19 @@ var gpu = {
   async unzip (zipFile, desination) {
     var unzipper = new unzip(zipFile)
     return new Promise((resolve, reject) => {
-      console.log('STARTING TO UNZIP')
+      log.info('STARTING TO UNZIP')
       unzipper.on('error', function (err) {
-        console.error('Caught an error', err)
+        log.error('Caught an error', err)
         reject(err)
       })
 
       unzipper.on('extract', function (log) {
-        console.log('Finished extracting', log)
+        log.info('Finished extracting', log)
         resolve(log)
       })
 
       unzipper.on('progress', function (fileIndex, fileCount) {
-        console.log('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
+        log.info('Extracted file ' + (fileIndex + 1) + ' of ' + fileCount)
       })
 
       unzipper.extract({
@@ -239,18 +256,21 @@ var gpu = {
       gpu.emit('status', 'Installing Trex...')
       try {
         await fs.ensureDir(RESOURCEDIR)
-        const result = await gpu.unzip(path.join(RESOURCEDIR, 'trex.zip'), TREXPATH)
-        console.log(result)
+        await fs.remove(path.join(HOMEPATHRAW, 'trex.zip'))
+        await download("https://raw.githubusercontent.com/Boid-John/BoidDesktop/master/trex.zip",path.join(HOMEPATHRAW, 'trex.zip'))
+        const result = await gpu.unzip(path.join(HOMEPATHRAW, 'trex.zip'), TREXPATH)
+        await fs.remove(path.join(HOMEPATHRAW, 'trex.zip'))
+        log.info(result)
         // gpu.emit( 'status', result )
         return true
       } catch (error) {
         gpu.emit('error', error)
-        console.error(error)
+        log.error(error)
         return false
       }
     },
     async checkInstalled () {
-      const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(console.log)
+      const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(log.info)
       if(!result) gpu.emit('status', 'Trex not installed')
       return result
     },
@@ -261,8 +281,8 @@ var gpu = {
         if(installed) return gpu.trex.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
-      console.log('ready to start trex')
-      gpu.emit('status', 'starting...')
+      log.info('ready to start trex')
+      gpu.emit('status', 'Starting...')
       try {
         gpu.shouldBeRunning = true
         cfg.set('state.gpu.toggle', true)
@@ -277,8 +297,8 @@ var gpu = {
         gpu.trex.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
         gpu.trex.miner.stderr.on('data', data => gpu.emit('error', data.toString()))
         gpu.trex.miner.on('exit', (code, signal) => {
-          console.log('detected close code:', code, signal)
-          console.log('should be running', gpu.shouldBeRunning)
+          log.info('detected close code:', code, signal)
+          log.info('should be running', gpu.shouldBeRunning)
           gpu.trex.miner.removeAllListeners()
           gpu.trex.miner = null
           if(gpu.shouldBeRunning) {
@@ -292,7 +312,7 @@ var gpu = {
           }
         })
       } catch (error) {
-        console.error(error)
+        log.error(error)
         gpu.emit('error', error)
         return
       }
@@ -306,19 +326,19 @@ var gpu = {
     },
     async getStats () {
       try {
-        console.log('get stats')
+        log.info('get stats')
         const stats = (await ax.get('http://127.0.0.1:4067/summary')).data
         if(stats) return stats
         else gpu.emit('error', 'Error getting t-rex miner stats')
       } catch (error) {
-        console.error('problem getting trex stats')
+        log.error('problem getting trex stats')
         gpu.emit('error', 'problem getting trex stats')
       }
     },
     config: {
       async verify () {
         await fs.ensureDir(TREXPATH)
-        const result = await fs.exists(path.join(TREXPATH, 'boid-trex-config.json')).catch(console.log)
+        const result = await fs.exists(path.join(TREXPATH, 'boid-trex-config.json')).catch(log.info)
         if(!result) gpu.emit('status', 'trex config missing')
         return result
       },
@@ -341,7 +361,7 @@ var gpu = {
           // gpu.emit('status', 'trex config initialized')
           return 'trex config initialized'
         } catch (error) {
-          console.error(error)
+          log.error(error)
           gpu.emit('error', error)
           return error
         }
@@ -354,7 +374,7 @@ var gpu = {
           await jsonfile.writeFile(path.join(TREXPATH, 'boid-trex-config.json'), config)
           gpu.emit('trex.config.read', await gpu.trex.config.read())
         } catch (error) {
-          console.error('setIntensity Error')
+          log.error('setIntensity Error')
         }
 
       },
@@ -364,10 +384,10 @@ var gpu = {
       async read () {
         try {
           var config = await jsonfile.readFile(path.join(TREXPATH, 'boid-trex-config.json'))
-          console.log('Read trex config')
+          log.info('Read trex config')
           return config
         } catch (error) {
-          console.log(error)
+          log.info(error)
           gpu.emit('error', error)
         }
       }
@@ -375,20 +395,25 @@ var gpu = {
   },
   wildrig: {
     async install () {
-      gpu.emit('status', 'Installing Wildrig...')
+      gpu.emit('status','Downloading Wildrig...')
+
       try {
         await fs.ensureDir(WILDRIGPATH)
-        const result = await gpu.unzip(path.join(RESOURCEDIR, 'wildrig.zip'), WILDRIGPATH)
-        console.log(result)
+        await fs.remove(path.join(HOMEPATHRAW, 'wildrig.zip'))
+        await download("https://raw.githubusercontent.com/Boid-John/BoidDesktop/master/wildrig.zip",path.join(HOMEPATHRAW, 'wildrig.zip'))
+        gpu.emit('status', 'Installing Wildrig...')
+        const result = await gpu.unzip(path.join(HOMEPATHRAW, 'wildrig.zip'), WILDRIGPATH)
+        await fs.remove(path.join(HOMEPATHRAW, 'wildrig.zip'))
+        log.info(result)
         return true
       } catch (error) {
         gpu.emit('error', 'Error installing wildrig miner!')
-        console.error(error)
+        log.error(error)
         return false
       }
     },
     async checkInstalled () {
-      const result = await fs.exists(path.join(WILDRIGPATH, 'wildrig.exe')).catch(console.log)
+      const result = await fs.exists(path.join(WILDRIGPATH, 'wildrig.exe')).catch(log.info)
       if(!result) gpu.emit('status', 'wildrig not installed')
       return result
     },
@@ -399,8 +424,8 @@ var gpu = {
         if(installed) return gpu.wildrig.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
-      console.log('ready to start wildrig')
-      gpu.emit('status', 'starting...')
+      log.info('ready to start wildrig')
+      gpu.emit('status', 'Starting...')
       try {
         gpu.shouldBeRunning = true
         cfg.set('state.gpu.toggle', true)
@@ -412,8 +437,8 @@ var gpu = {
         gpu.wildrig.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
         gpu.wildrig.miner.stderr.on('data', data => gpu.emit('error', data.toString()))
         gpu.wildrig.miner.on('exit', (code, signal) => {
-          console.log('detected close code:', code, signal)
-          console.log('should be running', gpu.shouldBeRunning)
+          log.info('detected close code:', code, signal)
+          log.info('should be running', gpu.shouldBeRunning)
           gpu.wildrig.miner.removeAllListeners()
           gpu.wildrig.miner = null
           if(gpu.shouldBeRunning) {
@@ -427,7 +452,7 @@ var gpu = {
           }
         })
       } catch (error) {
-        console.error(error)
+        log.error(error)
         gpu.emit('error', error)
         return
       }
@@ -441,19 +466,19 @@ var gpu = {
     },
     async getStats () {
       try {
-        console.log('get stats')
+        log.info('get stats')
         const stats = (await ax.get('http://127.0.0.1:4068')).data
         if(stats) return stats
         else gpu.emit('error', 'Error getting wildrig miner stats')
       } catch (error) {
-        console.error('problem getting wildrig stats')
+        log.error('problem getting wildrig stats')
         gpu.emit('error', 'problem getting wildrig stats')
       }
     },
     config: {
       async verify () {
         await fs.ensureDir(WILDRIGPATH)
-        const result = await fs.exists(path.join(WILDRIGPATH, 'boid-wildrig-config.json')).catch(console.log)
+        const result = await fs.exists(path.join(WILDRIGPATH, 'boid-wildrig-config.json')).catch(log.info)
         if(!result) gpu.emit('status', 'wildrig config missing')
         return result
       },
@@ -474,7 +499,7 @@ var gpu = {
           }
           return 'wildrig config initialized'
         } catch (error) {
-          console.error(error)
+          log.error(error)
           gpu.emit('error', error)
           return error
         }
@@ -492,7 +517,7 @@ var gpu = {
           await jsonfile.writeFile(path.join(WILDRIGPATH, 'boid-wildrig-config.json'), configArray)
           gpu.emit('wildrig.config.read', await gpu.wildrig.config.read())
         } catch (error) {
-          console.error('setIntensity Error')
+          log.error('setIntensity Error')
         }
 
       },
@@ -500,11 +525,11 @@ var gpu = {
       async read () {
         try {
           var config = await jsonfile.readFile(path.join(WILDRIGPATH, 'boid-wildrig-config.json'))
-          console.log('Read wildrig config')
+          log.info('Read wildrig config')
           return config
         } catch (error) {
           await fs.remove(path.join(WILDRIGPATH, 'boid-wildrig-config.json'))
-          console.log(error)
+          log.info(error)
           gpu.emit('error', error)
           return null
         }
