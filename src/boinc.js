@@ -39,7 +39,6 @@ var spawnConfig = {
 async function setupIPC(funcName) {
   try {
     const channel = 'boinc.' + funcName
-    log.info(funcName,channel)
     ipcMain.on(channel, async (event, arg) => {
       ipc.init(event.sender,'boinc')
       log.info('IPC Event Received:', channel + '()')
@@ -67,7 +66,6 @@ boinc.killExisting = async () => {
     }
     if (thisPlatform === 'win32') await exec('Taskkill /IM boinc.exe /F')
     else await exec('pkill -9 boinc')
-    log.info('removed existing')
   } catch (error) {
     log.error(error)
     log.info('No Existing processes')

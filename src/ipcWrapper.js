@@ -24,7 +24,7 @@ async send ( channel, data) {
 async on ( channel, func) {
   try {
     channel = this.prefix + '.' + channel
-    log.info('On:', channel, func )
+    // log.info('On:', channel, func )
     ipcMain.on(channel,(event,data,data2) => func(data,data2))
   } catch (error) {
     log.error(error)

@@ -58,10 +58,7 @@ async function setupIPC (methods, prefix1, prefix2) {
     for(var methodName of Object.keys(methods)) {
       if(!isFunction(methods[methodName])) await setupIPC(methods[methodName], prefix1, methodName)
       if(isObject(methods[methodName])) continue
-      log.info(methods[methodName])
-      const channel = 'gpu.' + prefix1 + '.' + prefix2 + methodName
-      log.info(channel)
-  
+      const channel = 'gpu.' + prefix1 + '.' + prefix2 + methodName  
       ipcMain.on(channel, async (event, arg) => {
         gpu.window = event.sender
         log.info('IPC Event Received:', channel + '()')
@@ -98,13 +95,11 @@ var gpu = {
     } catch (error) {
       log.error(error)
     }
-
-
     log.info('gpuEmit:', channel, data)
   },
   async on (channel, func) {
     channel = 'gpu.' + channel
-    log.info('ipcOn:', channel, func)
+    // log.info('ipcOn:', channel, func)
     return await ipcMain.on(channel, async (event, data) => {
       return await func(data)
     })
@@ -270,7 +265,7 @@ var gpu = {
       }
     },
     async checkInstalled () {
-      const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(log.info)
+      const result = await fs.exists(path.join(TREXPATH, 't-rex.exe')).catch(log.error)
       if(!result) gpu.emit('status', 'Trex not installed')
       return result
     },

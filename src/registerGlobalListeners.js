@@ -5,7 +5,7 @@ var gpu = require('./gpu')
 var boinc = require('./boinc')
 const isDev = require('electron-is-dev')
 const log = require('electron-log')
-
+const path = require('path')
 var isQuiting
 
 function init(appWindow) {
@@ -49,6 +49,9 @@ function setupGlobalIPC(){
   ipcMain.on('restart', (event,debug) =>{
     if (debug) app.relaunch({ args: process.argv.slice(1).concat(['--enable-logging']) })
     return app.exit()
+  })
+  ipcMain.on('openLogs', (event, dir) => {
+    return shell.openItem(path.join(app.getPath('userData'),'log.log'))
   })
 }
 
