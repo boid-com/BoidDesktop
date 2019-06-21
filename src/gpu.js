@@ -229,9 +229,9 @@ var gpu = {
         reject(err)
       })
 
-      unzipper.on('extract', function (log) {
-        log.info('Finished extracting', log)
-        resolve(log)
+      unzipper.on('extract', function (data) {
+        log.info('Finished extracting', data)
+        resolve(data)
       })
 
       unzipper.on('progress', function (fileIndex, fileCount) {
