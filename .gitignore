@@ -4,6 +4,6 @@ out
 .DS_Store
 src/.DS_Store
 dxdiag.xml
-.zip
 .dmg
 BOIDCERT.pfx
+.vscode

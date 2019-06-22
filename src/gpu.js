@@ -296,7 +296,7 @@ var gpu = {
         })
         gpu.trex.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
         gpu.trex.miner.stderr.on('data', data => ec(data.toString()))
-        gpu.trex.miner.on('exit', (code, signal) => {
+        gpu.trex.miner.on('exit', async (code, signal) => {
           log.info('detected close code:', code, signal)
           log.info('should be running', gpu.shouldBeRunning)
           gpu.trex.miner.removeAllListeners()
@@ -437,7 +437,7 @@ var gpu = {
         })
         gpu.wildrig.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
         gpu.wildrig.miner.stderr.on('data', data => ec(data.toString()))
-        gpu.wildrig.miner.on('exit', (code, signal) => {
+        gpu.wildrig.miner.on('exit', async (code, signal) => {
           log.info('detected close code:', code, signal)
           log.info('should be running', gpu.shouldBeRunning)
           gpu.wildrig.miner.removeAllListeners()
