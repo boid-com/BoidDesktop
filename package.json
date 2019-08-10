@@ -1,8 +1,8 @@
 {
   "name": "boid",
   "productName": "Boid",
-  "version": "0.0.51",
-  "description": "Desktop Application for the Boid platform",
+  "version": "0.0.52",
+  "description": "Desktop Application for the Boid platform.",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",
@@ -73,7 +73,7 @@
     "fix-path": "^2.1.0",
     "fs-extra": "^5.0.0",
     "jsonfile": "^5.0.0",
-    "machine-uuid": "^1.2.0",
+    "node-machine-id": "^1.1.12",
     "sudo-prompt": "^8.2.5",
     "xml-to-json-promise": "0.0.3",
     "xml2js": "^0.4.19"

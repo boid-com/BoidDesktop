@@ -1,6 +1,6 @@
-const duid = require("machine-uuid")
+const {machineId} = require("node-machine-id")
 const cfg = require( 'electron-settings' )
-const {ipcMain,app,powerSaveBlocker} = require('electron')
+const {ipcMain,powerSaveBlocker} = require('electron')
 const isDev = require( 'electron-is-dev' )
 const ipc = require('./ipcWrapper')()
 const boinc = require('./boinc')
@@ -94,7 +94,7 @@ config.init = async function(force,cb){
 
 config.updateDeviceID = async function(){
   try {
-    const deviceID = await duid()
+    const deviceID = await machineId()
     cfg.set('device.uid', deviceID)
     cfg.set('device.name', os.hostname())
     cfg.set('device.os', os.platform())

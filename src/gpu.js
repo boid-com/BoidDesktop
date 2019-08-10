@@ -13,7 +13,12 @@ const { exec } = require('child-process-promise')
 const jsonfile = require('jsonfile')
 const cfg = require('electron-settings')
 const log = require('electron-log')
-
+function ec(error){
+  log.error(error)
+  if (gpu.window) gpu.emit('error',{date:Date.now(),error})
+  else ipcMain.emit('error',{date:Date.now(),error})
+}
+async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
 
 async function download(url, dest) {
   var file = fs.createWriteStream(dest)
@@ -229,9 +234,9 @@ var gpu = {
         reject(err)
       })
 
-      unzipper.on('extract', function (log) {
-        log.info('Finished extracting', log)
-        resolve(log)
+      unzipper.on('extract', function (data) {
+        log.info('Finished extracting', data)
+        resolve(data)
       })
 
       unzipper.on('progress', function (fileIndex, fileCount) {
@@ -290,14 +295,15 @@ var gpu = {
           env: null
         })
         gpu.trex.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
-        gpu.trex.miner.stderr.on('data', data => gpu.emit('error', data.toString()))
-        gpu.trex.miner.on('exit', (code, signal) => {
+        gpu.trex.miner.stderr.on('data', data => ec(data.toString()))
+        gpu.trex.miner.on('exit', async (code, signal) => {
           log.info('detected close code:', code, signal)
           log.info('should be running', gpu.shouldBeRunning)
           gpu.trex.miner.removeAllListeners()
           gpu.trex.miner = null
           if(gpu.shouldBeRunning) {
             gpu.emit('message', 'The Miner stopped and Boid is restarting it')
+            await sleep(10000)
             gpu.trex.start()
           } else {
             gpu.emit('message', 'The Miner was stopped')
@@ -430,14 +436,15 @@ var gpu = {
           cwd: WILDRIGPATH,
         })
         gpu.wildrig.miner.stdout.on('data', data => gpu.emit('log', data.toString()))
-        gpu.wildrig.miner.stderr.on('data', data => gpu.emit('error', data.toString()))
-        gpu.wildrig.miner.on('exit', (code, signal) => {
+        gpu.wildrig.miner.stderr.on('data', data => ec(data.toString()))
+        gpu.wildrig.miner.on('exit', async (code, signal) => {
           log.info('detected close code:', code, signal)
           log.info('should be running', gpu.shouldBeRunning)
           gpu.wildrig.miner.removeAllListeners()
           gpu.wildrig.miner = null
           if(gpu.shouldBeRunning) {
             gpu.emit('message', 'The Miner stopped and Boid is restarting it')
+            await sleep(10000)
             gpu.wildrig.start()
           } else {
             gpu.emit('message', 'The Miner was stopped')
