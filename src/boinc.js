@@ -146,6 +146,7 @@ boinc.start = async (data) => {
     boinc.process.on('exit', (code, signal) => {
       log.info('detected close code:', code, signal)
       log.info('should be running', boinc.shouldBeRunning)
+      //Check if the 'process' is a valid object.
       if(boinc.process){
         boinc.process.removeAllListeners()
         boinc.process = null
