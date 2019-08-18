@@ -15,7 +15,7 @@ function init(appWindow) {
   app.on('before-quit', async ()=>{
     isQuiting = true
     if (appWindow) appWindow.close()
-    await boinc.killExisting()
+    if(boinc.process) await boinc.killExisting()  //<--- We must check if the 'process' is active prior killing it. If not, we get errors in console.
   })
   app.on('activate', () => appWindow.show)
   appWindow.on('ready-to-show', () => {

@@ -146,16 +146,19 @@ boinc.start = async (data) => {
     boinc.process.on('exit', (code, signal) => {
       log.info('detected close code:', code, signal)
       log.info('should be running', boinc.shouldBeRunning)
-      boinc.process.removeAllListeners()
-      boinc.process = null
-      if(boinc.shouldBeRunning) {
-        boinc.send('message', 'The Miner stopped and Boid is restarting it')
-        boinc.start()
-      } else {
-        boinc.send('message', 'BOINC was stopped')
-        boinc.send('status', 'Stopped')
-        boinc.send('toggle', false)
-        cfg.set('state.cpu.toggle', false)
+      //Check if the 'process' is a valid object.
+      if(boinc.process){
+        boinc.process.removeAllListeners()
+        boinc.process = null
+        if(boinc.shouldBeRunning) {
+          boinc.send('message', 'The Miner stopped and Boid is restarting it')
+          boinc.start()
+        } else {
+          boinc.send('message', 'BOINC was stopped')
+          boinc.send('status', 'Stopped')
+          boinc.send('toggle', false)
+          cfg.set('state.cpu.toggle', false)
+        }
       }
     })
   }catch(error){if(ec)ec(error)}
