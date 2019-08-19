@@ -39,7 +39,8 @@
             "name": "Boid",
             "iconUrl": "https://assets.boid.com/images/logo.ico",
             "setupIcon": "./logo.ico",
-            "loadingGif": "./loading.gif"
+            "loadingGif": "./loading.gif",
+            "certificateFile": "./util/BOIDCERT.pfx"
           },
           "platforms": [
             "win32"
@@ -73,7 +74,10 @@
     "fix-path": "^2.1.0",
     "fs-extra": "^5.0.0",
     "jsonfile": "^5.0.0",
+    "make": "^0.8.1",
     "node-machine-id": "^1.1.12",
+    "npm": "^6.10.3",
+    "run": "^1.4.0",
     "sudo-prompt": "^8.2.5",
     "xml-to-json-promise": "0.0.3",
     "xml2js": "^0.4.19"
