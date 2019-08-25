@@ -168,7 +168,8 @@ boinc.stop = async (data) => {
   cfg.set('state.cpu.toggle', false)
   if(!boinc.process) return boinc.send('toggle', false)
   // boinc.process.kill()
-  await boinc.cmd('quit')
+  //await boinc.cmd('quit')   //<--- We are commenting out this line of source code in order to make sure that nothing goes wrong with the communication between BOINC and BOINCCMD modules...
+  await boinc.killExisting()  //<--- Instead of trying to stop the BOINC process through the BOINCCMD module we just kill the entire process...
   await sleep(5000)
   boinc.shouldBeRunning = false
   return sleep(5000)
