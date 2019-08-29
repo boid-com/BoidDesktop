@@ -17,6 +17,7 @@ const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
 
+const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/" //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
 // else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
@@ -25,6 +26,7 @@ if (isDev) var RESOURCEDIR = path.join(__dirname, '../')
 else var RESOURCEDIR = path.join(__dirname, '../../')
 
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
+
 function ec(error){
   log.error(error)
   if (ipc.ipc) boinc.send('error',{date:Date.now(),error})
@@ -51,12 +53,12 @@ async function setupIPC(funcName) {
 
 }
 
-
 var boinc = {
   eventsRegistered:false,
   initializing:false,
   shouldBeRunning:false
 }
+
 boinc.killExisting = async () => {
   try {
     await boinc.stop()
@@ -73,7 +75,9 @@ boinc.killExisting = async () => {
 }
 
 boinc.send = (channel,data,data2) => ipc.send(channel,data,data2)
+
 boinc.on = (channel,data) => ipc.on(channel,data)
+
 boinc.init = async (event) => {
   try {
     ipc.init(event.sender,'boinc')
@@ -105,11 +109,13 @@ boinc.reset = async () => {
   app.relaunch()
   app.exit()
 }
+
 boinc.openDirectory = async () => {
   shell.openItem(BOINCPATH)
 }
 
 boinc.start = async (data) => {
+  /* Check for a valid installation of BOINC platform. If there is none we are trying to install it. */
   try {
     const checkInstall = await boinc.checkInstalled()
     if(!checkInstall) {
@@ -121,7 +127,12 @@ boinc.start = async (data) => {
     ec(error)
     boinc.stop()
   }
-  await boinc.killExisting()
+
+  /* That is the actual 'start' process part of the source code. */
+  //await boinc.killExisting()  //<--- We won't be killing the existing process if it's running. We are just going to be checking if running and then start it.
+  //<--- Find of a way to check if the BOINC client is running...if not we must start it 'safely'...
+
+
   boinc.initializing = false
   boinc.shouldBeRunning = true
   boinc.send('status', 'Starting...')
@@ -162,8 +173,8 @@ boinc.start = async (data) => {
       }
     })
   }catch(error){if(ec)ec(error)}
+}
 
-  }
 boinc.stop = async (data) => {
   cfg.set('state.cpu.toggle', false)
   if(!boinc.process) return boinc.send('toggle', false)
