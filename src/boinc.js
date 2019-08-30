@@ -16,6 +16,7 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
+const psList = require('ps-list');  //<--- Include the nodeJS module for checking if a process exists.
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/" //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
@@ -114,8 +115,43 @@ boinc.openDirectory = async () => {
   shell.openItem(BOINCPATH)
 }
 
+/*
+ * With this method we detect if BOINC client is running.
+ */
+boinc.detectIfRunning = async () => {
+  var boincProcessFound=false
+  await psList().then(processData => {
+    for(var i=0, len=processData.length; i<len; i++){
+      console.log(processData[i].name);
+      if(processData[i].name==='boinc.exe'){
+        boincProcessFound=!boincProcessFound
+        break
+      }
+    }
+  });
+
+  return boincProcessFound
+}
+
+boinc.spawnProcess = async () =>{
+  //if (thisPlatform === 'win32') exe = 'boinc.exe'
+  //else exe = './boinc'
+
+  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : './boinc')  //<--- Use the more elegant ternary expression.
+  var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
+  if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
+
+  boinc.process = spawn(exe, params, {
+    silent: false,
+    cwd: BOINCPATH,
+    shell: false,
+    detached: true,
+    env: null,
+  })
+}
+
 boinc.start = async (data) => {
-  /* Check for a valid installation of BOINC platform. If there is none we are trying to install it. */
+  /* Check for a valid installation of BOINC platform. If there is none we are trying to install it. Recall ourselves after installing. */
   try {
     const checkInstall = await boinc.checkInstalled()
     if(!checkInstall) {
@@ -132,29 +168,24 @@ boinc.start = async (data) => {
   //await boinc.killExisting()  //<--- We won't be killing the existing process if it's running. We are just going to be checking if running and then start it.
   //<--- Find of a way to check if the BOINC client is running...if not we must start it 'safely'...
 
+  const checkIfRunning = await boinc.detectIfRunning()
 
   boinc.initializing = false
   boinc.shouldBeRunning = true
   boinc.send('status', 'Starting...')
   try {
     cfg.set('state.cpu.toggle', true)
-    if(boinc.process && boinc.process.killed === false) return boinc.process.kill()
-    var exe
-    if (thisPlatform === 'win32') exe = 'boinc.exe'
-    else exe = './boinc'
-    var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
-    if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
-    boinc.process = spawn(exe, params, {
-      silent: false,
-      cwd: BOINCPATH,
-      shell: false,
-      detached: true,
-      env: null,
-    })
+    //if(boinc.process && boinc.process.killed === false) return boinc.process.kill()   //<--- We don't need to kill the BOINC process anymore. If running we will be autostarting.
+   
+    if(!checkIfRunning)           //<--- If BOINC client is not running then we need to start it manually.
+      await boinc.spawnProcess()
+
     setTimeout(()=>boinc.send('started'),1000)
+
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
     boinc.process.stderr.on('data', data => ipc.send('error', data.toString()))
-    boinc.process.on('exit', (code, signal) => {
+
+    boinc.process.on('exit', (code, signal) => {                //<--- NEXT TASK...REFACTOR THIS EVENT IN ORDER NOT TO KILL THE PROCESS...
       log.info('detected close code:', code, signal)
       log.info('should be running', boinc.shouldBeRunning)
       //Check if the 'process' is a valid object.
