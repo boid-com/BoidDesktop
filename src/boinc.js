@@ -18,7 +18,10 @@ var sudo = require('sudo-prompt')
 const log = require('electron-log')
 const psList = require('ps-list');  //<--- Include the nodeJS module for checking if a process exists.
 
-const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/" //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
+const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
+const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
+const BOINCRESUMECMD="project " + BOINCPROJECTNAME + " resume"    //<--- That is the BOINCCMD command to resume the project.
+
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
 // else var HOMEPATH = path.join(app.getPath('home'), '.Boid')
@@ -51,7 +54,6 @@ async function setupIPC(funcName) {
   } catch (error) {
     log.error(error)
   }
-
 }
 
 var boinc = {
@@ -122,7 +124,6 @@ boinc.detectIfRunning = async () => {
   var boincProcessFound=false
   await psList().then(processData => {
     for(var i=0, len=processData.length; i<len; i++){
-      console.log(processData[i].name);
       if(processData[i].name==='boinc.exe'){
         boincProcessFound=!boincProcessFound
         break
@@ -182,10 +183,12 @@ boinc.start = async (data) => {
 
     setTimeout(()=>boinc.send('started'),1000)
 
+    await boinc.cmd(BOINCRESUMECMD)
+
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
     boinc.process.stderr.on('data', data => ipc.send('error', data.toString()))
 
-    boinc.process.on('exit', (code, signal) => {                //<--- NEXT TASK...REFACTOR THIS EVENT IN ORDER NOT TO KILL THE PROCESS...
+    boinc.process.on('exit', (code, signal) => {
       log.info('detected close code:', code, signal)
       log.info('should be running', boinc.shouldBeRunning)
       //Check if the 'process' is a valid object.
@@ -210,7 +213,8 @@ boinc.stop = async (data) => {
   cfg.set('state.cpu.toggle', false)
   if(!boinc.process) return boinc.send('toggle', false)
   // boinc.process.kill()
-  await boinc.cmd('quit')
+  //await boinc.cmd('quit')         //<--- We cannot kill the BOINC client. This line have been substituted by the one that is following.
+  await boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
   await sleep(5000)
   boinc.shouldBeRunning = false
   return sleep(5000)
