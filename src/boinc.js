@@ -16,7 +16,7 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
-const psList = require('ps-list');  //<--- Include the nodeJS module for checking if a process exists.
+const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
@@ -217,6 +217,8 @@ boinc.stop = async (data) => {
   await boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
   await sleep(5000)
   boinc.shouldBeRunning = false
+  boinc.send('status', 'Stopped')   //<--- We must update the client with the new status for 'Stopped'.
+  boinc.send('Stopped')
   return sleep(5000)
 }
 
