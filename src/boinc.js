@@ -57,15 +57,16 @@ async function setupIPC(funcName) {
 }
 
 var boinc = {
-  eventsRegistered:false,
-  initializing:false,
-  shouldBeRunning:false
+  eventsRegistered: false,
+  initializing: false,
+  shouldBeRunning: false,
+  thisPlatform: thisPlatform
 }
 
 boinc.killExisting = async () => {
   try {
     await boinc.stop()
-    if ( boinc.process) {
+    if (boinc.process) {
       process.kill(-boinc.process.pid)
       boinc.process.kill()
     }
