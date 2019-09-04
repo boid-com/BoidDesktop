@@ -36,7 +36,7 @@ function init(appWindow) {
     if (isQuiting){
       boinc.shouldBeRunning=false   //<--- Inform the BOID Desktop Application that we the BOINC client module should not be running. (Avoid the auto-restart of the process by the application)
       destroyBOINCClient()          //<--- We must kill the BOINC process before we quit the BOID Desktop Application.
-      return appWindow = null
+      return appWindow = null       //<--- The original 'return' value of this method.
     }
     e.preventDefault()
     appWindow.hide()
