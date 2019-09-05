@@ -16,6 +16,11 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
+const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
+
+const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
+const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
+const BOINCRESUMECMD="project " + BOINCPROJECTNAME + " resume"    //<--- That is the BOINCCMD command to resume the project.
 
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
@@ -25,6 +30,7 @@ if (isDev) var RESOURCEDIR = path.join(__dirname, '../')
 else var RESOURCEDIR = path.join(__dirname, '../../')
 
 async function sleep(){return new Promise(resolve => setTimeout(resolve,3000))}
+
 function ec(error){
   log.error(error)
   if (ipc.ipc) boinc.send('error',{date:Date.now(),error})
@@ -48,19 +54,19 @@ async function setupIPC(funcName) {
   } catch (error) {
     log.error(error)
   }
-
 }
-
 
 var boinc = {
-  eventsRegistered:false,
-  initializing:false,
-  shouldBeRunning:false
+  eventsRegistered: false,
+  initializing: false,
+  shouldBeRunning: false,
+  thisPlatform: thisPlatform
 }
+
 boinc.killExisting = async () => {
   try {
     await boinc.stop()
-    if ( boinc.process) {
+    if (boinc.process) {
       process.kill(-boinc.process.pid)
       boinc.process.kill()
     }
@@ -73,7 +79,9 @@ boinc.killExisting = async () => {
 }
 
 boinc.send = (channel,data,data2) => ipc.send(channel,data,data2)
+
 boinc.on = (channel,data) => ipc.on(channel,data)
+
 boinc.init = async (event) => {
   try {
     ipc.init(event.sender,'boinc')
@@ -105,11 +113,47 @@ boinc.reset = async () => {
   app.relaunch()
   app.exit()
 }
+
 boinc.openDirectory = async () => {
   shell.openItem(BOINCPATH)
 }
 
+/*
+ * With this method we detect if BOINC client is running.
+ */
+boinc.detectIfRunning = async () => {
+  var boincProcessFound=false
+  await psList().then(processData => {
+    for(var i=0, len=processData.length; i<len; i++){
+      if(processData[i].name==='boinc.exe'){
+        boincProcessFound=!boincProcessFound
+        break
+      }
+    }
+  });
+
+  return boincProcessFound
+}
+
+boinc.spawnProcess = async () =>{
+  //if (thisPlatform === 'win32') exe = 'boinc.exe'
+  //else exe = './boinc'
+
+  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : './boinc')  //<--- Use the more elegant ternary expression.
+  var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
+  if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
+
+  boinc.process = spawn(exe, params, {
+    silent: false,
+    cwd: BOINCPATH,
+    shell: false,
+    detached: true,
+    env: null,
+  })
+}
+
 boinc.start = async (data) => {
+  /* Check for a valid installation of BOINC platform. If there is none we are trying to install it. Recall ourselves after installing. */
   try {
     const checkInstall = await boinc.checkInstalled()
     if(!checkInstall) {
@@ -121,28 +165,30 @@ boinc.start = async (data) => {
     ec(error)
     boinc.stop()
   }
-  await boinc.killExisting()
+
+  /* That is the actual 'start' process part of the source code. */
+  //await boinc.killExisting()  //<--- We won't be killing the existing process if it's running. We are just going to be checking if running and then start it.
+  //<--- Find of a way to check if the BOINC client is running...if not we must start it 'safely'...
+
+  const checkIfRunning = await boinc.detectIfRunning()
+
   boinc.initializing = false
   boinc.shouldBeRunning = true
   boinc.send('status', 'Starting...')
   try {
     cfg.set('state.cpu.toggle', true)
-    if(boinc.process && boinc.process.killed === false) return boinc.process.kill()
-    var exe
-    if (thisPlatform === 'win32') exe = 'boinc.exe'
-    else exe = './boinc'
-    var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
-    if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
-    boinc.process = spawn(exe, params, {
-      silent: false,
-      cwd: BOINCPATH,
-      shell: false,
-      detached: true,
-      env: null,
-    })
+    //if(boinc.process && boinc.process.killed === false) return boinc.process.kill()   //<--- We don't need to kill the BOINC process anymore. If running we will be autostarting.
+   
+    if(!checkIfRunning)           //<--- If BOINC client is not running then we need to start it manually.
+      await boinc.spawnProcess()
+
     setTimeout(()=>boinc.send('started'),1000)
+
+    await boinc.cmd(BOINCRESUMECMD)
+
     boinc.process.stdout.on('data', data => ipc.send('log', data.toString()))
     boinc.process.stderr.on('data', data => ipc.send('error', data.toString()))
+
     boinc.process.on('exit', (code, signal) => {
       log.info('detected close code:', code, signal)
       log.info('should be running', boinc.shouldBeRunning)
@@ -162,15 +208,18 @@ boinc.start = async (data) => {
       }
     })
   }catch(error){if(ec)ec(error)}
+}
 
-  }
 boinc.stop = async (data) => {
   cfg.set('state.cpu.toggle', false)
   if(!boinc.process) return boinc.send('toggle', false)
   // boinc.process.kill()
-  await boinc.cmd('quit')
+  //await boinc.cmd('quit')         //<--- We cannot kill the BOINC client. This line have been substituted by the one that is following.
+  await boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
   await sleep(5000)
   boinc.shouldBeRunning = false
+  boinc.send('status', 'Stopped')   //<--- We must update the client with the new status for 'Stopped'.
+  boinc.send('Stopped')
   return sleep(5000)
 }
 
