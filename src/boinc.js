@@ -18,6 +18,7 @@ var sudo = require('sudo-prompt')
 const log = require('electron-log')
 const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
 
+
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
 const BOINCRESUMECMD="project " + BOINCPROJECTNAME + " resume"    //<--- That is the BOINCCMD command to resume the project.
@@ -276,34 +277,71 @@ boinc.install = async () => {
     boinc.initializing = true
     await boinc.stop()
     await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
-    if (thisPlatform === 'win32') return boinc.unzip()
-    await fs.ensureDir(BOINCPATH)
-    var cmd0 = 'rm -rf ' + BOINCPATH
-    var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC.zip') + ' -d ' + HOMEPATH
-    var cmd2 = 'cd ' + BOINCPATH
-    var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
-    var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
-    var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
-    var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done' + '"'
-    log.info(cmd)
-    return new Promise(async function (resolve, reject) {
-      sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
-        if (err) reject(err)
-        if (stdout) {
-          log.info(stdout)
-          if (stdout.indexOf('done') > -1) {
-            log.info('SANDBOX FINISHED')
-            boinc.intializing = false
-            await boinc.prefs.init()
-            resolve(stdout)
+
+    if (thisPlatform === 'win32'){
+      /* Windows Installation of BOINC client path */
+      return boinc.unzip()
+    }else if(thisPlatform === 'linux'){
+      /* Linux Installation of BOINC client path (For the time being just repeat/modify the Mac source code.) */
+      await fs.ensureDir(BOINCPATH)
+      var cmd0 = 'rm -rf ' + BOINCPATH
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC_lx.zip') + ' -d ' + HOMEPATH
+      var cmd2 = 'cd ' + HOMEPATH
+      var cmd3 = 'chmod u+=rwx ./boinc_7.2.42_x86_64-pc-linux-gnu.sh'
+      var cmd4 = './boinc_7.2.42_x86_64-pc-linux-gnu.sh'
+      var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && echo done' + '"'
+      log.info(cmd)
+      sleep(10000)
+console.log(">>>>>>>>>>>>>>>>>>>"+cmd)
+
+      return new Promise(async function (resolve, reject) {
+        sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
+          if (err) reject(err)
+          if (stdout) {
+            log.info(stdout)
+            if (stdout.indexOf('done') > -1) {
+              log.info('SANDBOX FINISHED')
+              boinc.intializing = false
+              await boinc.prefs.init()
+              resolve(stdout)
+            }
           }
-        }
-        if (stderr) {
-          // log.info(stderr)
-          reject(stderr)
-        }
+          if (stderr) {
+            // log.info(stderr)
+            reject(stderr)
+          }
+        })
       })
-    })
+    }else{
+      /* Mac Installation of BOINC client path */
+      await fs.ensureDir(BOINCPATH)
+      var cmd0 = 'rm -rf ' + BOINCPATH
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC.zip') + ' -d ' + HOMEPATH
+      var cmd2 = 'cd ' + BOINCPATH
+      var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
+      var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
+      var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
+      var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done' + '"'
+      log.info(cmd)
+      return new Promise(async function (resolve, reject) {
+        sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
+          if (err) reject(err)
+          if (stdout) {
+            log.info(stdout)
+            if (stdout.indexOf('done') > -1) {
+              log.info('SANDBOX FINISHED')
+              boinc.intializing = false
+              await boinc.prefs.init()
+              resolve(stdout)
+            }
+          }
+          if (stderr) {
+            // log.info(stderr)
+            reject(stderr)
+          }
+        })
+      })
+    }
   }catch(error){if(ec)ec(error)}
 
   
