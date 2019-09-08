@@ -17,7 +17,7 @@ const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
 const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
-
+const getos = require('getos')
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
@@ -271,8 +271,22 @@ boinc.cmd = async (cmd) => {
   }catch(error){if(ec)ec(error)}
 }
 
+boinc.detectAndInstallLinux = async () => {
+  getos(function(e, os){
+    return boinc.installLinux(os)
+  })
+}
+
 /* Linux Installation has been cut-off from the main installer in order to be much more maintenable */
-boinc.installLinux = async () => {
+boinc.installLinux = async (osInfo) => {
+  /* Begin the installation by installing the essential libraries for the BOINC client */
+  if(osInfo.dist.toUpperCase().includes("UBUNTU")){
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    console.log(osInfo.dist.toUpperCase())
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+    await sudo.exec('apt-get install libssl1.0.0 libssl-dev')
+  }
+
   await fs.ensureDir(BOINCPATH)
   var cmd0 = 'rm -rf ' + BOINCPATH
   var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC_lx.zip') + ' -d ' + HOMEPATH
@@ -313,7 +327,7 @@ boinc.install = async () => {
       return boinc.unzip()
     }else if(thisPlatform === 'linux'){
       /* Linux Installation of BOINC client path (For the time being just repeat/modify the Mac source code.) */
-      return boinc.installLinux()
+      return boinc.detectAndInstallLinux()
     }else{
       /* Mac Installation of BOINC client path */
       await fs.ensureDir(BOINCPATH)

@@ -72,6 +72,7 @@
     "electron-unhandled": "^1.1.0",
     "fix-path": "^2.1.0",
     "fs-extra": "^5.0.0",
+    "getos": "^3.1.1",
     "jsonfile": "^5.0.0",
     "node-machine-id": "^1.1.12",
     "ps-list": "^6.3.0",
