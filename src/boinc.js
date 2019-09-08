@@ -271,6 +271,36 @@ boinc.cmd = async (cmd) => {
   }catch(error){if(ec)ec(error)}
 }
 
+/* Linux Installation has been cut-off from the main installer in order to be much more maintenable */
+boinc.installLinux = async () => {
+  await fs.ensureDir(BOINCPATH)
+  var cmd0 = 'rm -rf ' + BOINCPATH
+  var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC_lx.zip') + ' -d ' + HOMEPATH
+  var cmd2 = 'cd ' + HOMEPATH
+  var cmd3 = 'chmod u+=rwx ./boinc_7.2.42_x86_64-pc-linux-gnu.sh'
+  var cmd4 = './boinc_7.2.42_x86_64-pc-linux-gnu.sh'
+  var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && echo done' + '"'
+  log.info(cmd)
+
+  return new Promise(async function (resolve, reject) {
+    sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
+      if (err) reject(err)
+      if (stdout) {
+        log.info(stdout)
+        if (stdout.indexOf('done') > -1) {
+          log.info('SANDBOX FINISHED')
+          boinc.intializing = false
+          await boinc.prefs.init()
+          resolve(stdout)
+        }
+      }
+      if (stderr) {
+        reject(stderr)
+      }
+    })
+  })  
+}
+
 boinc.install = async () => {
   try {
     if (boinc.initializing) return
@@ -283,35 +313,7 @@ boinc.install = async () => {
       return boinc.unzip()
     }else if(thisPlatform === 'linux'){
       /* Linux Installation of BOINC client path (For the time being just repeat/modify the Mac source code.) */
-      await fs.ensureDir(BOINCPATH)
-      var cmd0 = 'rm -rf ' + BOINCPATH
-      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC_lx.zip') + ' -d ' + HOMEPATH
-      var cmd2 = 'cd ' + HOMEPATH
-      var cmd3 = 'chmod u+=rwx ./boinc_7.2.42_x86_64-pc-linux-gnu.sh'
-      var cmd4 = './boinc_7.2.42_x86_64-pc-linux-gnu.sh'
-      var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && echo done' + '"'
-      log.info(cmd)
-      sleep(10000)
-console.log(">>>>>>>>>>>>>>>>>>>"+cmd)
-
-      return new Promise(async function (resolve, reject) {
-        sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
-          if (err) reject(err)
-          if (stdout) {
-            log.info(stdout)
-            if (stdout.indexOf('done') > -1) {
-              log.info('SANDBOX FINISHED')
-              boinc.intializing = false
-              await boinc.prefs.init()
-              resolve(stdout)
-            }
-          }
-          if (stderr) {
-            // log.info(stderr)
-            reject(stderr)
-          }
-        })
-      })
+      return boinc.installLinux()
     }else{
       /* Mac Installation of BOINC client path */
       await fs.ensureDir(BOINCPATH)
