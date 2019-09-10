@@ -41,7 +41,7 @@ function ec(error){
 var spawnConfig = {
   cwd: BOINCPATH,
   name: 'Boid Secure Sandbox'
-} 
+}
 
 async function setupIPC(funcName) {
   try {
@@ -126,7 +126,7 @@ boinc.detectIfRunning = async () => {
   var boincProcessFound=false
   await psList().then(processData => {
     for(var i=0, len=processData.length; i<len; i++){
-      if(processData[i].name==='boinc.exe'){
+      if((processData[i].name==='boinc.exe' && thisPlatform==='win32')||(processData[i].name==='boinc' && thisPlatform!=='win32')){
         boincProcessFound=!boincProcessFound
         break
       }
@@ -140,13 +140,13 @@ boinc.spawnProcess = async () =>{
   //if (thisPlatform === 'win32') exe = 'boinc.exe'
   //else exe = './boinc'
 
-  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : './boinc')  //<--- Use the more elegant ternary expression.
+  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : (thisPlatform === 'linux' ? 'boinc' : './boinc'))  //<--- Use the more elegant ternary expression.
   var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
   if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
 
   boinc.process = spawn(exe, params, {
     silent: false,
-    cwd: BOINCPATH,
+    cwd: BOINCPATH, //<--- Leave it untouched for Linux clients (???)
     shell: false,
     detached: true,
     env: null,
@@ -279,30 +279,20 @@ boinc.detectAndInstallLinux = async () => {
 
 /* Linux Installation has been cut-off from the main installer in order to be much more maintenable */
 boinc.installLinux = async (osInfo) => {
+  var cmd=""
+
   /* Begin the installation by installing the essential libraries for the BOINC client */
   if(osInfo.dist.toUpperCase().includes("UBUNTU")){
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    console.log(osInfo.dist.toUpperCase())
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    await sudo.exec('apt-get install libssl1.0.0 libssl-dev')
+    cmd= 'apt-get install boinc'
   }
 
-  await fs.ensureDir(BOINCPATH)
-  var cmd0 = 'rm -rf ' + BOINCPATH
-  var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC_lx.zip') + ' -d ' + HOMEPATH
-  var cmd2 = 'cd ' + HOMEPATH
-  var cmd3 = 'chmod u+=rwx ./boinc_7.2.42_x86_64-pc-linux-gnu.sh'
-  var cmd4 = './boinc_7.2.42_x86_64-pc-linux-gnu.sh'
-  var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && echo done' + '"'
-  log.info(cmd)
-
   return new Promise(async function (resolve, reject) {
-    sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
+    sudo.exec(cmd, {name: 'Boid Install BOINC Client'}, async function (err, stdout, stderr) {
       if (err) reject(err)
       if (stdout) {
         log.info(stdout)
         if (stdout.indexOf('done') > -1) {
-          log.info('SANDBOX FINISHED')
+          log.info('BOINC INSTALLATION FINISHED')
           boinc.intializing = false
           await boinc.prefs.init()
           resolve(stdout)
