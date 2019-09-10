@@ -61,8 +61,14 @@ var boinc = {
   eventsRegistered: false,
   initializing: false,
   shouldBeRunning: false,
-  thisPlatform: thisPlatform
+  thisPlatform: thisPlatform,
+  linuxExtraOSInfo: {}
 }
+
+/* Detect Linux exact distribution. Must be executed the earliest possible in the source code! */
+getos(function(e, os){
+  boinc.linuxExtraOSInfo=os
+})
 
 boinc.killExisting = async () => {
   try {
@@ -252,9 +258,21 @@ boinc.unzip = async () => {
 }
 
 boinc.checkInstalled = async () => {
-  const exists = await fs.exists(path.join(BOINCPATH, 'remote_hosts.cfg')).catch(ec)
+  var exists
+  if(thisPlatform!=='linux'){
+    exists = await fs.exists(path.join(BOINCPATH, 'remote_hosts.cfg')).catch(ec)
+  }else{
+    if(boinc.linuxExtraOSInfo.dist.toUpperCase().includes("UBUNTU")){
+      exists = await fs.exists(path.join('/var/lib/boinc/', 'remote_hosts.cfg')).catch(ec)
+    }
+  }
+
+  /* The following lines of source code have been commented out as non-usable */
+  /*
   if (!exists) return false
   else return true
+  */
+ return exists
 }
 
 boinc.cmd = async (cmd) => {
@@ -273,7 +291,9 @@ boinc.cmd = async (cmd) => {
 
 boinc.detectAndInstallLinux = async () => {
   getos(function(e, os){
-    return boinc.installLinux(os)
+    return new Promise(async function(resolve, reject){
+      await boinc.installLinux(os)
+    })
   })
 }
 
@@ -283,7 +303,7 @@ boinc.installLinux = async (osInfo) => {
 
   /* Begin the installation by installing the essential libraries for the BOINC client */
   if(osInfo.dist.toUpperCase().includes("UBUNTU")){
-    cmd= 'apt-get install boinc'
+    cmd="apt-get -y install boinc"
   }
 
   return new Promise(async function (resolve, reject) {
@@ -291,10 +311,15 @@ boinc.installLinux = async (osInfo) => {
       if (err) reject(err)
       if (stdout) {
         log.info(stdout)
-        if (stdout.indexOf('done') > -1) {
-          log.info('BOINC INSTALLATION FINISHED')
+        if (stdout.indexOf('Processing triggers') > -1) {
+          log.info('BOINC CLIENT INSTALLATION FINISHED')
           boinc.intializing = false
-          await boinc.prefs.init()
+          //await fs.outputFile(path.join('/var/lib/boinc/', 'remote_hosts.cfg'), 'localhost').catch(ec)
+          sudo.exec('sh -c "echo localhost >> /var/lib/boinc/remote_hosts.cfg"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+            if (error) throw error;
+            console.log('stdout: ' + stdout);
+          })
+          await boinc.prefs.init()  //<-----NEXT TASK...REFACTOR THIS FUNCTION FOR LINUX
           resolve(stdout)
         }
       }
@@ -310,7 +335,10 @@ boinc.install = async () => {
     if (boinc.initializing) return
     boinc.initializing = true
     await boinc.stop()
-    await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
+    /* We will ammend the file "remote_hosts.cfg" in Linux after the installation has finished */
+    if(thisPlatform!=='linux'){
+      await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
+    }
 
     if (thisPlatform === 'win32'){
       /* Windows Installation of BOINC client path */
