@@ -387,7 +387,17 @@ boinc.prefs = {
     if (cb) return cb()
   },
   async write(prefs) {
-    return fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+    if(thisPlatform!=='linux'){
+      return fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+    }else{
+      await fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+      return async function(){
+        sudo.exec('sh -c "\cp ' + path.join(BOINCPATH, 'global_prefs_override.xml') + ' /etc/boinc-client/"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+          if (error) throw error;
+          console.log('stdout: ' + stdout);
+        })
+      }()
+    }
   },
   async read(){
      try {
