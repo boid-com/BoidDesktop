@@ -275,13 +275,21 @@ boinc.checkInstalled = async () => {
  return exists
 }
 
-boinc.cmd = async (cmd) => {
+boinc.cmd = async (cmd) => {    //<--- NEXT TASK...AUTHORIZATION FAILURE ON LINUX...ADD USER TO BOINC GROUP?
   try {
     if (!boinc.shouldBeRunning) return null
     var pass = await fs.readFile(path.join(BOINCPATH, 'gui_rpc_auth.cfg'), 'utf8')
     var exe
-    if (thisPlatform === "win32") exe = 'boinccmd'
-    else exe = './boinccmd'
+    if (thisPlatform === "win32"){
+      exe = 'boinccmd'
+    }else{
+      if(thisPlatform!=='linux'){
+        exe = './boinccmd'
+      }else{
+        exe = 'boinccmd'
+      }
+    }
+    
     log.info('BOINC.CMD',cmd)
     const result = (await exec(exe + ` --host localhost --passwd ` + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
     log.info(result)
@@ -319,7 +327,7 @@ boinc.installLinux = async (osInfo) => {
             if (error) throw error;
             console.log('stdout: ' + stdout);
           })
-          await boinc.prefs.init()  //<-----NEXT TASK...REFACTOR THIS FUNCTION FOR LINUX
+          await boinc.prefs.init()
           resolve(stdout)
         }
       }
@@ -394,7 +402,11 @@ boinc.prefs = {
       return async function(){
         sudo.exec('sh -c "\cp ' + path.join(BOINCPATH, 'global_prefs_override.xml') + ' /etc/boinc-client/"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
           if (error) throw error;
-          console.log('stdout: ' + stdout);
+          console.log('stdout: ' + stdout)
+        })
+        sudo.exec('sh -c "echo localhost > /etc/boinc-client/gui_rpc_auth.cfg && \cp /etc/boinc-client/gui_rpc_auth.cfg ' + BOINCPATH + ' && chown $USER:$USER ' + BOINCPATH + '/gui_rpc_auth.cfg' + '"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+          if (error) throw error;
+          console.log('stdout: ' + stdout)
         })
       }()
     }
