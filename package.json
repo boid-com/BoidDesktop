@@ -1,7 +1,7 @@
 {
   "name": "boid",
   "productName": "Boid",
-  "version": "0.0.53",
+  "version": "0.0.6",
   "description": "Desktop Application for the Boid platform.",
   "main": "src/index.js",
   "scripts": {
@@ -76,8 +76,7 @@
     "jsonfile": "^5.0.0",
     "make": "^0.8.1",
     "node-machine-id": "^1.1.12",
-    "npm": "^6.10.3",
-    "run": "^1.4.0",
+    "ps-list": "^6.3.0",
     "sudo-prompt": "^8.2.5",
     "xml-to-json-promise": "0.0.3",
     "xml2js": "^0.4.19"
