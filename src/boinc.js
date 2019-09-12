@@ -16,12 +16,13 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
-const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
-const getos = require('getos')
+const psList = require('ps-list')   //<--- Include the nodeJS module for checking if a process exists.
+const getos = require('getos')      //<--- Include the nodeJS module for detecting the exact version of the Linux distro.
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
 const BOINCRESUMECMD="project " + BOINCPROJECTNAME + " resume"    //<--- That is the BOINCCMD command to resume the project.
+const LINUXBOINCPATH="/var/lib/boinc-client/"                     //<--- That is the BOINC client path under linux distros.
 
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
@@ -275,7 +276,7 @@ boinc.checkInstalled = async () => {
  return exists
 }
 
-boinc.cmd = async (cmd) => {    //<--- NEXT TASK...AUTHORIZATION FAILURE ON LINUX...ADD USER TO BOINC GROUP?
+boinc.cmd = async (cmd) => {
   try {
     if (!boinc.shouldBeRunning) return null
     var pass = await fs.readFile(path.join(BOINCPATH, 'gui_rpc_auth.cfg'), 'utf8')
@@ -289,9 +290,11 @@ boinc.cmd = async (cmd) => {    //<--- NEXT TASK...AUTHORIZATION FAILURE ON LINU
         exe = 'boinccmd'
       }
     }
-    
+
+    pass=(thisPlatform!=='linux' ? pass : pass.replace('\n', ''))
+
     log.info('BOINC.CMD',cmd)
-    const result = (await exec(exe + ` --host localhost --passwd ` + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
+    const result = (await exec(exe + ' --host localhost --passwd ' + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
     log.info(result)
     return result
   }catch(error){if(ec)ec(error)}
@@ -404,7 +407,7 @@ boinc.prefs = {
           if (error) throw error;
           console.log('stdout: ' + stdout)
         })
-        sudo.exec('sh -c "echo localhost > /etc/boinc-client/gui_rpc_auth.cfg && \cp /etc/boinc-client/gui_rpc_auth.cfg ' + BOINCPATH + ' && chown $USER:$USER ' + BOINCPATH + '/gui_rpc_auth.cfg' + '"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+        sudo.exec('sh -c "echo localhost > /etc/boinc-client/gui_rpc_auth.cfg && \cp /etc/boinc-client/gui_rpc_auth.cfg ' + BOINCPATH + ' && chown $USER:$USER ' + BOINCPATH + '/gui_rpc_auth.cfg && sudo systemctl restart boinc-client.service' + '"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
           if (error) throw error;
           console.log('stdout: ' + stdout)
         })
@@ -470,7 +473,8 @@ boinc.config = {
 
 boinc.state = {
   async getAll () {
-    const stateFile = path.join(BOINCPATH, './client_state.xml')
+    const stateFile = (thisPlatform!=='linux' ? path.join(BOINCPATH, './client_state.xml') : path.join(LINUXBOINCPATH, './client_state.xml'))
+    console.log(">>>>>>>>>>>>>>>>>>>>>>" + stateFile)
     try {
       var exists = await fs.exists(stateFile)
       if(!exists) throw ('state file does not exist')
@@ -518,7 +522,7 @@ boinc.state = {
     return stats
   },
   async clear () {
-    const stateFile = path.join(BOINCPATH, './client_state.xml')
+    const stateFile = (thisPlatform!=='linux' ? path.join(BOINCPATH, './client_state.xml') : path.join(LINUXBOINCPATH, './client_state.xml'))
     try {
       var exists = await fs.exists(stateFile)
       if(exists) await fs.remove(stateFile)
