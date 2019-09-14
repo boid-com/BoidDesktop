@@ -474,7 +474,6 @@ boinc.config = {
 boinc.state = {
   async getAll () {
     const stateFile = (thisPlatform!=='linux' ? path.join(BOINCPATH, './client_state.xml') : path.join(LINUXBOINCPATH, './client_state.xml'))
-    console.log(">>>>>>>>>>>>>>>>>>>>>>" + stateFile)
     try {
       var exists = await fs.exists(stateFile)
       if(!exists) throw ('state file does not exist')
