@@ -12,6 +12,7 @@ const log = require('electron-log')
 const config = require('./config')
 const path = require('path')
 const os = require('os')
+const ipc = require('./ipcWrapper')()   //<--- Require-in the ipc wrapper for send the events to the site.
 require('electron-unhandled')()
 require('fix-path')()
 
@@ -29,6 +30,10 @@ app.on('ready', async () => {
   config.init()
   setupTray()
   setupWindow()
+  //Send the on-batteries event to the site to handle any BOINC client suspension.....
+  electron.powerMonitor.on('on-battery', () => {
+    ipc.send('log', "Suspending computation - on batteries")
+  })
 })
 
 async function setupWindow () {
