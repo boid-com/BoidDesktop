@@ -13,6 +13,9 @@ const config = require('./config')
 const path = require('path')
 const os = require('os')
 const ipc = require('./ipcWrapper')()   //<--- Require-in the ipc wrapper for send the events to the site.
+const electron = require('electron')    //<--- Require the electron module. Used for the 'powerMonitor' sub-module.
+const boinc = require('./boinc')        //<--- Require the boinc object in order to gain access to the global application state.
+
 require('electron-unhandled')()
 require('fix-path')()
 
@@ -23,6 +26,8 @@ app.disableHardwareAcceleration()
 let appWindow
 let tray
 let windowIPC
+let windowIntervalHandle
+let powerMonitor
 
 handleSecondInstance()
 ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender)
@@ -30,10 +35,26 @@ app.on('ready', async () => {
   config.init()
   setupTray()
   setupWindow()
+
+  var tmpConfigObj=await config.get()
+  var tmpGlobalConfigObj=await boinc.prefs.read()
+console.log(tmpGlobalConfigObj)
+  powerMonitor=electron.powerMonitor
   //Send the on-batteries event to the site to handle any BOINC client suspension.....
-  electron.powerMonitor.on('on-battery', () => {
-    ipc.send('log', "Suspending computation - on batteries")
+  powerMonitor.on('on-battery', () => {
+    if(tmpGlobalConfigObj.run_on_batteries[0]==='0'){
+      ipc.send('log', "Suspending computation - on batteries")
+    }
   })
+
+  //Send the on-use event to the site to handle any BOINC client suspension.....
+  windowIntervalHandle = setInterval(async function(){
+    powerMonitor.querySystemIdleTime(async function(idleTime){
+      if(idleTime===0 && (tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && tmpGlobalConfigObj.run_if_user_active[0]==='0'){
+        ipc.send('log', "Suspending computation - computer is in use")
+      }
+    })
+  }, 2000)
 })
 
 async function setupWindow () {
@@ -54,7 +75,10 @@ async function setupWindow () {
   })
   appWindow.loadURL(`file://${__dirname}/appwindow.html`)
   require('./registerGlobalListeners')(appWindow)
-  appWindow.on('closed', () => appWindow = null)
+  appWindow.on('closed', () => {
+    appWindow = null
+    clearInterval(windowIntervalHandle)
+  })
 }
 
 function setupTray () {
