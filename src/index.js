@@ -38,7 +38,7 @@ app.on('ready', async () => {
 
   var tmpConfigObj=await config.get()
   var tmpGlobalConfigObj=await boinc.prefs.read()
-console.log(tmpGlobalConfigObj)
+
   powerMonitor=electron.powerMonitor
   //Send the on-batteries event to the site to handle any BOINC client suspension.....
   powerMonitor.on('on-battery', () => {
