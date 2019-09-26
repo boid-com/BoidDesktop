@@ -18,7 +18,7 @@ var sudo = require('sudo-prompt')
 const log = require('electron-log')
 const psList = require('ps-list')       //<--- Include the nodeJS module for checking if a process exists.
 const getos = require('getos')          //<--- Include the nodeJS module for detecting the exact version of the Linux distro.
-const nodeJSEvents = require('nodeJSEvents')  //<--- Our In-House nodeJS module for events sub/sink.
+const boincAppEvents = require('./boincAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.

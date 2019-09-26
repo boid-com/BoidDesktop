@@ -15,6 +15,7 @@ const os = require('os')
 const ipc = require('./ipcWrapper')()   //<--- Require-in the ipc wrapper for send the events to the site.
 const electron = require('electron')    //<--- Require the electron module. Used for the 'powerMonitor' sub-module.
 const boinc = require('./boinc')        //<--- Require the boinc object in order to gain access to the global application state.
+const boincAppEvents = require('./boincAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
 require('electron-unhandled')()
 require('fix-path')()
