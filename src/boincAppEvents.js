@@ -47,8 +47,8 @@ boincAppEvents.deRegisterEvent = async (eventName) => {
 boincAppEvents.emit = async (eventName) => {
     let findVal=await boincAppEvents.isEventRegistered(eventName)
 
-    if(findVal){
-        console.log('Event with name: ['+eventName+'] has already been registered!')
+    if(!findVal){
+        console.log('Event with name: ['+eventName+'] has not been registered!')
     }else{
         boincAppEvents.eventEmitter.emit(eventName)
     }

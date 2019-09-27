@@ -52,7 +52,11 @@ app.on('ready', async () => {
   windowIntervalHandle = setInterval(async function(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
       if(idleTime===0 && (tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && tmpGlobalConfigObj.run_if_user_active[0]==='0'){
+        boincAppEvents.emit('boinc.suspend')
         ipc.send('log', "Suspending computation - computer is in use")
+      }else{
+        boincAppEvents.emit('boinc.resume')
+        ipc.send('log', "Resuming computation")
       }
     })
   }, 2000)

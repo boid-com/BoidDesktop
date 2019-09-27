@@ -533,4 +533,24 @@ boinc.state = {
   }
 }
 
+/* START OF EVENTS AREA */
+
+boinc.suspend = async () => {
+  if(boinc.shouldBeRunning){
+    boinc.shouldBeRunning = false
+    await boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
+  }
+}
+
+boinc.resume = async () => {
+  if(!boinc.shouldBeRunning){
+    await boinc.cmd(BOINCRESUMECMD)  //<--- The project gets suspended only.
+    boinc.shouldBeRunning = true
+  }
+}
+
+boincAppEvents.registerEvent('boinc.suspend', boinc.suspend)
+boincAppEvents.registerEvent('boinc.resume', boinc.resume)
+/* END OF EVENTS AREA */
+
 module.exports = boinc
