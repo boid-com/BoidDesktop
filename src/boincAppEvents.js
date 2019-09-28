@@ -31,8 +31,8 @@ boincAppEvents.registerEvent = async (eventName, eventMethod) => {
 boincAppEvents.deRegisterEvent = async (eventName) => {
     let findVal=await boincAppEvents.isEventRegistered(eventName)
 
-    if(findVal){
-        console.log('Event with name: ['+eventName+'] has already been registered!')
+    if(!findVal){
+        console.log('Event with name: ['+eventName+'] has not been registered!')
     }else{
         boincAppEvents.eventEmitter.removeListener(eventName, eventMethod)
         for(let i=0; i<boincAppEvents.eventsRegistered.length; i++){
