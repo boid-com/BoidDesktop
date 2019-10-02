@@ -399,6 +399,9 @@ boinc.prefs = {
     if (cb) return cb()
   },
   async write(prefs) {
+    prefs.run_on_batteries='1'    //<--- Overwrite the settings with default value...
+    prefs.run_if_user_active='1'  //<--- Overwrite the settings with default value...
+
     if(thisPlatform!=='linux'){
       return fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
     }else{
@@ -457,9 +460,9 @@ boinc.config = {
     } catch (error) {
       log.info('reset config')
       await fs.remove(boinc.config.file)
-      await boinc.config.write({autoStart:false, run_if_user_active:false, run_on_batteries:false, idle_time_to_run:3})
+      await boinc.config.write({autoStart:false, run_if_user_active:true, run_on_batteries:true, idle_time_to_run:3})
       ec(error)
-      return {autoStart:false, run_if_user_active:false, run_on_batteries:false, idle_time_to_run:3}
+      return {autoStart:false, run_if_user_active:true, run_on_batteries:true, idle_time_to_run:3}
     }
   },
   async write (config) {
@@ -534,7 +537,6 @@ boinc.state = {
 }
 
 /* START OF EVENTS AREA */
-
 boinc.suspend = async () => {
   if(boinc.shouldBeRunning){
     boinc.shouldBeRunning = false

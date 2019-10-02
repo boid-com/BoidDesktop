@@ -43,23 +43,36 @@ app.on('ready', async () => {
   powerMonitor=electron.powerMonitor
   //Send the on-batteries event to the site to handle any BOINC client suspension.....
   powerMonitor.on('on-battery', () => {
-    if(tmpGlobalConfigObj.run_on_batteries[0]==='0'){
+    if(!tmpConfigObj.run_on_batteries){
+      boincAppEvents.emit('boinc.suspend')
       ipc.send('log', "Suspending computation - on batteries")
+    }
+  })
+
+  powerMonitor.on('on-ac', () => {
+    if(!tmpConfigObj.run_on_batteries){
+      boincAppEvents.emit('boinc.resume')
+      ipc.send('log', "Resuming computation")
     }
   })
 
   //Send the on-use event to the site to handle any BOINC client suspension.....
   windowIntervalHandle = setInterval(async function(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
-      if(idleTime===0 && (tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && tmpGlobalConfigObj.run_if_user_active[0]==='0'){
-        boincAppEvents.emit('boinc.suspend')
-        ipc.send('log', "Suspending computation - computer is in use")
-      }else{
-        boincAppEvents.emit('boinc.resume')
-        ipc.send('log', "Resuming computation")
+      console.log(tmpConfigObj)
+      // console.log(tmpConfigObj.run_if_user_active)
+      // console.log(tmpConfigObj.run_on_batteries)
+      if((tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && !tmpConfigObj.run_if_user_active) {
+        if(idleTime===0){
+          boincAppEvents.emit('boinc.suspend')
+          ipc.send('log', "Suspending computation - computer is in use")
+        }else{
+          boincAppEvents.emit('boinc.resume')
+          ipc.send('log', "Resuming computation")
+        }
       }
     })
-  }, 2000)
+  }, 5000)
 })
 
 async function setupWindow () {
