@@ -38,6 +38,7 @@ app.on('ready', async () => {
   setupWindow()
 
   var tmpConfigObj=await config.get()
+  var tmpBoincObj=await boinc.config.read()
   var tmpGlobalConfigObj=await boinc.prefs.read()
 
   powerMonitor=electron.powerMonitor
@@ -59,9 +60,9 @@ app.on('ready', async () => {
   //Send the on-use event to the site to handle any BOINC client suspension.....
   windowIntervalHandle = setInterval(async function(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
-      console.log(tmpConfigObj)
-      // console.log(tmpConfigObj.run_if_user_active)
-      // console.log(tmpConfigObj.run_on_batteries)
+      console.log(">>>>>>>>>>>>>>>>>>>>>>CONFIG")
+      console.log(tmpBoincObj)
+
       if((tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && !tmpConfigObj.run_if_user_active) {
         if(idleTime===0){
           boincAppEvents.emit('boinc.suspend')
