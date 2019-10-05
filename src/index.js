@@ -37,20 +37,22 @@ app.on('ready', async () => {
   setupTray()
   setupWindow()
 
-  var tmpConfigObj=await config.get()
-  var tmpBoincObj=await boinc.config.read()
   var tmpGlobalConfigObj=await boinc.prefs.read()
 
   powerMonitor=electron.powerMonitor
   //Send the on-batteries event to the site to handle any BOINC client suspension.....
-  powerMonitor.on('on-battery', () => {
+  powerMonitor.on('on-battery', async () => {
+    var tmpConfigObj=await config.get()
+
     if(!tmpConfigObj.run_on_batteries){
       boincAppEvents.emit('boinc.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
   })
 
-  powerMonitor.on('on-ac', () => {
+  powerMonitor.on('on-ac', async () => {
+    var tmpConfigObj=await config.get()
+
     if(!tmpConfigObj.run_on_batteries){
       boincAppEvents.emit('boinc.resume')
       ipc.send('log', "Resuming computation")
@@ -60,16 +62,16 @@ app.on('ready', async () => {
   //Send the on-use event to the site to handle any BOINC client suspension.....
   windowIntervalHandle = setInterval(async function(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
-      console.log(">>>>>>>>>>>>>>>>>>>>>>CONFIG")
-      console.log(tmpBoincObj)
+      var tmpConfigObj=await config.get()
+      var tmpCPUBoincObj=await boinc.config.read()
 
-      if((tmpConfigObj.state.cpu.toggle || tmpConfigObj.state.gpu.toggle || tmpConfigObj.state.hdd.toggle) && !tmpConfigObj.run_if_user_active) {
+      if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.run_if_user_active) {
         if(idleTime===0){
-          boincAppEvents.emit('boinc.suspend')
-          ipc.send('log', "Suspending computation - computer is in use")
+          await ipc.send('log', "Suspending computation - computer is in use")
+          await boincAppEvents.emit('boinc.suspend')
         }else{
-          boincAppEvents.emit('boinc.resume')
-          ipc.send('log', "Resuming computation")
+          await ipc.send('log', "Resuming computation")
+          await boincAppEvents.emit('boinc.resume')
         }
       }
     })
