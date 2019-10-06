@@ -27,8 +27,9 @@ app.disableHardwareAcceleration()
 let appWindow
 let tray
 let windowIPC
-let windowIntervalHandle
+//let windowIntervalHandle
 let powerMonitor
+let intervalTimer=3000
 
 handleSecondInstance()
 ipcMain.on('windowInitialized', (event, arg) => windowIPC = event.sender)
@@ -60,6 +61,35 @@ app.on('ready', async () => {
   })
 
   //Send the on-use event to the site to handle any BOINC client suspension.....
+  function _timeoutFunction(){
+    powerMonitor.querySystemIdleTime(async function(idleTime){
+      var tmpConfigObj=await config.get()
+      var tmpCPUBoincObj=await boinc.config.read()
+
+      if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.run_if_user_active) {
+        if(idleTime===0){
+          await ipc.send('log', "Suspending computation - computer is in use")
+          await boincAppEvents.emit('boinc.suspend')
+
+          intervalTimer=parseInt(tmpCPUBoincObj.idle_time_to_run, 10) * 60000
+          setTimeout(_timeoutFunction, intervalTimer)
+        }else{
+          await ipc.send('log', "Resuming computation")
+          await boincAppEvents.emit('boinc.resume')
+
+          intervalTimer=3000
+          setTimeout(_timeoutFunction, intervalTimer)
+        }
+      }else{
+        setTimeout(_timeoutFunction, intervalTimer)
+      }
+    })
+  }
+
+  setTimeout(_timeoutFunction, intervalTimer)
+
+  //Send the on-use event to the site to handle any BOINC client suspension.....
+  /*
   windowIntervalHandle = setInterval(async function(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
       var tmpConfigObj=await config.get()
@@ -76,6 +106,9 @@ app.on('ready', async () => {
       }
     })
   }, 5000)
+  */
+
+
 })
 
 async function setupWindow () {
@@ -98,7 +131,7 @@ async function setupWindow () {
   require('./registerGlobalListeners')(appWindow)
   appWindow.on('closed', () => {
     appWindow = null
-    clearInterval(windowIntervalHandle)
+    //clearInterval(windowIntervalHandle)
   })
 }
 
