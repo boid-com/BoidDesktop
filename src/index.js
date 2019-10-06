@@ -15,7 +15,7 @@ const os = require('os')
 const ipc = require('./ipcWrapper')()   //<--- Require-in the ipc wrapper for send the events to the site.
 const electron = require('electron')    //<--- Require the electron module. Used for the 'powerMonitor' sub-module.
 const boinc = require('./boinc')        //<--- Require the boinc object in order to gain access to the global application state.
-const boincAppEvents = require('./boincAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
+const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
 require('electron-unhandled')()
 require('fix-path')()
@@ -46,7 +46,7 @@ app.on('ready', async () => {
     var tmpConfigObj=await config.get()
 
     if(!tmpConfigObj.run_on_batteries){
-      boincAppEvents.emit('boinc.suspend')
+      boidAppEvents.emit('boinc.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
   })
@@ -55,7 +55,7 @@ app.on('ready', async () => {
     var tmpConfigObj=await config.get()
 
     if(!tmpConfigObj.run_on_batteries){
-      boincAppEvents.emit('boinc.resume')
+      boidAppEvents.emit('boinc.resume')
       ipc.send('log', "Resuming computation")
     }
   })
@@ -69,13 +69,13 @@ app.on('ready', async () => {
       if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.run_if_user_active) {
         if(idleTime===0){
           await ipc.send('log', "Suspending computation - computer is in use")
-          await boincAppEvents.emit('boinc.suspend')
+          await boidAppEvents.emit('boinc.suspend')
 
           intervalTimer=parseInt(tmpCPUBoincObj.idle_time_to_run, 10) * 60000
           setTimeout(_timeoutFunction, intervalTimer)
         }else{
           await ipc.send('log', "Resuming computation")
-          await boincAppEvents.emit('boinc.resume')
+          await boidAppEvents.emit('boinc.resume')
 
           intervalTimer=3000
           setTimeout(_timeoutFunction, intervalTimer)
@@ -98,10 +98,10 @@ app.on('ready', async () => {
       if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.run_if_user_active) {
         if(idleTime===0){
           await ipc.send('log', "Suspending computation - computer is in use")
-          await boincAppEvents.emit('boinc.suspend')
+          await boidAppEvents.emit('boinc.suspend')
         }else{
           await ipc.send('log', "Resuming computation")
-          await boincAppEvents.emit('boinc.resume')
+          await boidAppEvents.emit('boinc.resume')
         }
       }
     })
