@@ -13,6 +13,8 @@ const { exec } = require('child-process-promise')
 const jsonfile = require('jsonfile')
 const cfg = require('electron-settings')
 const log = require('electron-log')
+const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
+
 function ec(error){
   log.error(error)
   if (gpu.window) gpu.emit('error',{date:Date.now(),error})
@@ -542,7 +544,28 @@ var gpu = {
 
 }
 
-
 // ipcMain.on( 'gpu.init', gpu.init )
+
+/* START OF EVENTS AREA */
+gpu.suspend = async () => {
+  if(gpu.shouldBeRunning){
+    await gpu.wildrig.stop()
+    await gpu.trex.stop()
+    await sleep(5000)
+    boinc.shouldBeRunning = false
+  }
+}
+
+gpu.resume = async () => {
+  if(!gpu.shouldBeRunning){
+    gpu.shouldBeRunning = true
+    await gpu.wildrig.start()
+    await gpu.trex.start()
+  }
+}
+
+boidAppEvents.registerEvent('gpu.suspend', gpu.suspend)
+boidAppEvents.registerEvent('gpu.resume', gpu.resume)
+/* END OF EVENTS AREA */
 
 module.exports = gpu
