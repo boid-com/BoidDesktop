@@ -12,14 +12,14 @@ const log = require('electron-log')
 const config = require('./config')
 const path = require('path')
 const os = require('os')
-const ipc = require('./ipcWrapper')()   //<--- Require-in the ipc wrapper for send the events to the site.
-const electron = require('electron')    //<--- Require the electron module. Used for the 'powerMonitor' sub-module.
-const boinc = require('./boinc')        //<--- Require the boinc object in order to gain access to the global application state.
+const ipc = require('./ipcWrapper')()             //<--- Require-in the ipc wrapper for send the events to the site.
+const electron = require('electron')              //<--- Require the electron module. Used for the 'powerMonitor' sub-module.
+const boinc = require('./boinc')                  //<--- Require the boinc object in order to gain access to the global application state.
 const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
+const gpu = require('./gpu')                      //<--- Require the boinc object in order to gain access to the global application state.
 
 require('electron-unhandled')()
 require('fix-path')()
-
 
 var thisPlatform = os.platform()
 app.setName('Boid')
@@ -43,18 +43,20 @@ app.on('ready', async () => {
   powerMonitor=electron.powerMonitor
   //Send the on-batteries event to the site to handle any BOINC client suspension.....
   powerMonitor.on('on-battery', async () => {
-    var tmpConfigObj=await config.get()
+    //var tmpConfigObj=await config.get()
+    var tmpCPUBoincObj=await boinc.config.read()
 
-    if(!tmpConfigObj.run_on_batteries){
+    if(!tmpCPUBoincObj.run_on_batteries){
       boidAppEvents.emit('boinc.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
   })
 
   powerMonitor.on('on-ac', async () => {
-    var tmpConfigObj=await config.get()
+    //var tmpConfigObj=await config.get()
+    var tmpCPUBoincObj=await boinc.config.read()
 
-    if(!tmpConfigObj.run_on_batteries){
+    if(!tmpCPUBoincObj.run_on_batteries){
       boidAppEvents.emit('boinc.resume')
       ipc.send('log', "Resuming computation")
     }

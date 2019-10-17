@@ -15,6 +15,9 @@ const cfg = require('electron-settings')
 const log = require('electron-log')
 const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
+var isTrex=false;
+var isWildrig=false;
+
 function ec(error){
   log.error(error)
   if (gpu.window) gpu.emit('error',{date:Date.now(),error})
@@ -283,6 +286,7 @@ var gpu = {
         if(installed) return gpu.trex.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
+      isTrex=true;  //<--- Persist the current program used.
       log.info('ready to start trex')
       gpu.emit('status', 'Starting...')
       try {
@@ -427,6 +431,7 @@ var gpu = {
         if(installed) return gpu.wildrig.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
+      isWildrig=true;  //<--- Persist the current program used.
       log.info('ready to start wildrig')
       gpu.emit('status', 'Starting...')
       try {
@@ -549,8 +554,12 @@ var gpu = {
 /* START OF EVENTS AREA */
 gpu.suspend = async () => {
   if(gpu.shouldBeRunning){
-    await gpu.wildrig.stop()
-    await gpu.trex.stop()
+    if(isWildrig){
+      await gpu.wildrig.stop()
+    }
+    if(isTrex){
+      await gpu.trex.stop()
+    }
     await sleep(5000)
     boinc.shouldBeRunning = false
   }
@@ -559,8 +568,12 @@ gpu.suspend = async () => {
 gpu.resume = async () => {
   if(!gpu.shouldBeRunning){
     gpu.shouldBeRunning = true
-    await gpu.wildrig.start()
-    await gpu.trex.start()
+    if(isWildrig){
+      await gpu.wildrig.start()
+    }
+    if(isTrex){
+      await gpu.trex.start()
+    }
   }
 }
 
