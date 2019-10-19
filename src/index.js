@@ -45,9 +45,15 @@ app.on('ready', async () => {
   powerMonitor.on('on-battery', async () => {
     //var tmpConfigObj=await config.get()
     var tmpCPUBoincObj=await boinc.config.read()
+    var tmpGPUBoincObj=await gpu.config.read()
 
     if(!tmpCPUBoincObj.run_on_batteries){
       boidAppEvents.emit('boinc.suspend')
+      ipc.send('log', "Suspending computation - on batteries")
+    }
+
+    if(!tmpGPUBoincObj.run_on_batteries){
+      boidAppEvents.emit('gpu.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
   })
@@ -55,15 +61,21 @@ app.on('ready', async () => {
   powerMonitor.on('on-ac', async () => {
     //var tmpConfigObj=await config.get()
     var tmpCPUBoincObj=await boinc.config.read()
+    var tmpGPUBoincObj=await gpu.config.read()
 
     if(!tmpCPUBoincObj.run_on_batteries){
       boidAppEvents.emit('boinc.resume')
       ipc.send('log', "Resuming computation")
     }
+
+    if(!tmpGPUBoincObj.run_on_batteries){
+      boidAppEvents.emit('gpu.resume')
+      ipc.send('log', "Resuming computation")
+    }
   })
 
   //Send the on-use event to the site to handle any BOINC client suspension.....
-  function _timeoutFunction(){
+  function _timeoutCPUFunction(){
     powerMonitor.querySystemIdleTime(async function(idleTime){
       var tmpConfigObj=await config.get()
       var tmpCPUBoincObj=await boinc.config.read()
@@ -74,21 +86,48 @@ app.on('ready', async () => {
           await boidAppEvents.emit('boinc.suspend')
 
           intervalTimer=parseInt(tmpCPUBoincObj.idle_time_to_run, 10) * 60000
-          setTimeout(_timeoutFunction, intervalTimer)
+          setTimeout(_timeoutCPUFunction, intervalTimer)
         }else{
           await ipc.send('log', "Resuming computation")
           await boidAppEvents.emit('boinc.resume')
 
           intervalTimer=3000
-          setTimeout(_timeoutFunction, intervalTimer)
+          setTimeout(_timeoutCPUFunction, intervalTimer)
         }
       }else{
-        setTimeout(_timeoutFunction, intervalTimer)
+        setTimeout(_timeoutCPUFunction, intervalTimer)
       }
     })
   }
 
-  setTimeout(_timeoutFunction, intervalTimer)
+//Send the on-use event to the site to handle any GPU client suspension.....
+function _timeoutGPUFunction(){
+  powerMonitor.querySystemIdleTime(async function(idleTime){
+    var tmpConfigObj=await config.get()
+    var tmpGPUBoincObj=await gpu.config.read()
+
+    if(tmpConfigObj.state.gpu.toggle && !tmpGPUBoincObj.run_if_user_active) {
+      if(idleTime===0){
+        await ipc.send('log', "Suspending computation - computer is in use")
+        await boidAppEvents.emit('gpu.suspend')
+
+        intervalTimer=parseInt(tmpGPUBoincObj.idle_time_to_run, 10) * 60000
+        setTimeout(_timeoutGPUFunction, intervalTimer)
+      }else{
+        await ipc.send('log', "Resuming computation")
+        await boidAppEvents.emit('gpu.resume')
+
+        intervalTimer=3000
+        setTimeout(_timeoutGPUFunction, intervalTimer)
+      }
+    }else{
+      setTimeout(_timeoutGPUFunction, intervalTimer)
+    }
+  })
+}
+  
+  setTimeout(_timeoutCPUFunction, intervalTimer)
+  setTimeout(_timeoutGPUFunction, intervalTimer)
 
   //Send the on-use event to the site to handle any BOINC client suspension.....
   /*
