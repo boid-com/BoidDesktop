@@ -91,7 +91,7 @@ app.on('ready', async () => {
           await ipc.send('log', "Resuming computation")
           await boidAppEvents.emit('boinc.resume')
 
-          intervalTimer=3000
+          intervalTimer=5000
           setTimeout(_timeoutCPUFunction, intervalTimer)
         }
       }else{
@@ -117,7 +117,7 @@ function _timeoutGPUFunction(){
         await ipc.send('log', "Resuming computation")
         await boidAppEvents.emit('gpu.resume')
 
-        intervalTimer=3000
+        intervalTimer=5000
         setTimeout(_timeoutGPUFunction, intervalTimer)
       }
     }else{
