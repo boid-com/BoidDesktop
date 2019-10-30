@@ -110,6 +110,10 @@ boinc.init = async (event) => {
     setupIPC('reset')
     setupIPC('openDirectory')
     setupIPC('state.getUI')
+
+    boidAppEvents.registerEvent('boinc.suspend', boinc.suspend)   //<--- Register the suspend event...
+    boidAppEvents.registerEvent('boinc.resume', boinc.resume)     //<--- Register the resume event...
+
     boinc.eventsRegistered = true
   } catch (error) {
     ec(error)
@@ -539,8 +543,8 @@ boinc.state = {
 /* START OF EVENTS AREA */
 boinc.suspend = async () => {
   if(boinc.shouldBeRunning){
-    await boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
-    await sleep(5000)
+    boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
+    sleep(5000)
     boinc.shouldBeRunning = false
 //    boinc.send('Stopped')
   }
@@ -549,12 +553,9 @@ boinc.suspend = async () => {
 boinc.resume = async () => {
   if(!boinc.shouldBeRunning){
     boinc.shouldBeRunning = true
-    await boinc.cmd(BOINCRESUMECMD)  //<--- The project gets suspended only.
+    boinc.cmd(BOINCRESUMECMD)  //<--- The project gets suspended only.
   }
 }
-
-boidAppEvents.registerEvent('boinc.suspend', boinc.suspend)
-boidAppEvents.registerEvent('boinc.resume', boinc.resume)
 /* END OF EVENTS AREA */
 
 module.exports = boinc

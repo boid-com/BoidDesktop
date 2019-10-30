@@ -15,9 +15,6 @@ const cfg = require('electron-settings')
 const log = require('electron-log')
 const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
-var isTrex=false;
-var isWildrig=false;
-
 function ec(error){
   log.error(error)
   if (gpu.window) gpu.emit('error',{date:Date.now(),error})
@@ -86,8 +83,14 @@ var gpu = {
   deviceID: null,
   window: null,
   async reset () {
-    await gpu.wildrig.stop()
-    await gpu.trex.stop()
+    //Minor optimization...
+    if(gpu.wildrig.miner){
+      await gpu.wildrig.stop()
+    }
+    //Minor optimization...
+    if(gpu.trex.miner){
+      await gpu.trex.stop()
+    }
     try {
       await fs.remove(GPUPATH), gpu.emit('Message', "GPU Directory removed", GPUPATH)
       app.relaunch()
@@ -172,6 +175,10 @@ var gpu = {
     setupIPC(gpu.trex, 'trex')
     setupIPC(gpu.wildrig, 'wildrig')
     setupIPC(gpu.config, 'config')
+
+    boidAppEvents.registerEvent('gpu.suspend', gpu.suspend) //<--- Register the suspend event...
+    boidAppEvents.registerEvent('gpu.resume', gpu.resume)   //<--- Register the resume event...
+
     gpu.eventsRegistered = true
   },
   async getGPU () {
@@ -286,7 +293,6 @@ var gpu = {
         if(installed) return gpu.trex.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
-      isTrex=true;  //<--- Persist the current program used.
       log.info('ready to start trex')
       gpu.emit('status', 'Starting...')
       try {
@@ -431,7 +437,6 @@ var gpu = {
         if(installed) return gpu.wildrig.start()
         else return gpu.emit('message', 'Unable to start due to install error.')
       }
-      isWildrig=true;  //<--- Persist the current program used.
       log.info('ready to start wildrig')
       gpu.emit('status', 'Starting...')
       try {
@@ -545,8 +550,6 @@ var gpu = {
       }
     }
   }
-
-
 }
 
 // ipcMain.on( 'gpu.init', gpu.init )
@@ -554,13 +557,13 @@ var gpu = {
 /* START OF EVENTS AREA */
 gpu.suspend = async () => {
   if(gpu.shouldBeRunning){
-    if(isWildrig){
-      await gpu.wildrig.stop()
+    if(gpu.wildrig.miner){
+      gpu.wildrig.stop()
     }
-    if(isTrex){
-      await gpu.trex.stop()
+    if(gpu.trex.miner){
+      gpu.trex.stop()
     }
-    await sleep(5000)
+    sleep(5000)
     boinc.shouldBeRunning = false
   }
 }
@@ -568,17 +571,14 @@ gpu.suspend = async () => {
 gpu.resume = async () => {
   if(!gpu.shouldBeRunning){
     gpu.shouldBeRunning = true
-    if(isWildrig){
-      await gpu.wildrig.start()
+    if(gpu.wildrig.miner){
+      gpu.wildrig.start()
     }
-    if(isTrex){
-      await gpu.trex.start()
+    if(gpu.trex.miner){
+      gpu.trex.start()
     }
   }
 }
-
-boidAppEvents.registerEvent('gpu.suspend', gpu.suspend)
-boidAppEvents.registerEvent('gpu.resume', gpu.resume)
 /* END OF EVENTS AREA */
 
 module.exports = gpu
