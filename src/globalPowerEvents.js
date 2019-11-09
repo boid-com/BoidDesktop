@@ -3,10 +3,11 @@ const electron = require('electron')              //<--- Require the electron mo
 const boinc = require('./boinc')                  //<--- Require the boinc object in order to gain access to the global application state.
 const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 const gpu = require('./gpu')                      //<--- Require the boinc object in order to gain access to the global application state.
+const config = require('./config')
 
 var globalPowerEvents={
     powerMonitor: {},
-    intervalTimer=5000
+    intervalTimer: 5000
 }
 
 globalPowerEvents.init = () => {
@@ -29,7 +30,7 @@ globalPowerEvents.init = () => {
     }
   })
 
-  powerMonitor.on('on-ac', async () => {
+  globalPowerEvents.powerMonitor.on('on-ac', async () => {
     //var tmpConfigObj=await config.get()
     var tmpCPUBoincObj=await boinc.config.read()
     var tmpGPUBoincObj=await gpu.config.read()
@@ -51,7 +52,7 @@ globalPowerEvents.init = () => {
 
 //Send the on-use event to the site to handle any BOINC client suspension.....
 function _timeoutCPUFunction(){
-    powerMonitor.querySystemIdleTime(async function(idleTime){
+  globalPowerEvents.powerMonitor.querySystemIdleTime(async function(idleTime){
       var tmpConfigObj=await config.get()
       var tmpCPUBoincObj=await boinc.config.read()
 
@@ -77,7 +78,7 @@ function _timeoutCPUFunction(){
 
 //Send the on-use event to the site to handle any GPU client suspension.....
 function _timeoutGPUFunction(){
-    powerMonitor.querySystemIdleTime(async function(idleTime){
+  globalPowerEvents.powerMonitor.querySystemIdleTime(async function(idleTime){
       var tmpConfigObj=await config.get()
       var tmpGPUBoincObj=await gpu.config.read()
   
@@ -100,3 +101,5 @@ function _timeoutGPUFunction(){
       }
     })
 }
+
+module.exports=globalPowerEvents

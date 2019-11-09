@@ -54,6 +54,6 @@ boidAppEvents.emit = async (eventName) => {
     }
 }
 
-boidAppEvents.init()   //<--- Module initialization method. Always make these non-async.
+//boidAppEvents.init()   //<--- Module initialization method. Always make these non-async.
 
 module.exports=boidAppEvents
