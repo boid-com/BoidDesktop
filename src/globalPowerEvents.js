@@ -19,12 +19,12 @@ globalPowerEvents.init = () => {
     var tmpCPUBoincObj=await boinc.config.read()
     var tmpGPUBoincObj=await gpu.config.read()
 
-    if(!tmpCPUBoincObj.run_on_batteries){
+    if(!tmpCPUBoincObj.runOnBatteries){
       boidAppEvents.emit('boinc.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
 
-    if(!tmpGPUBoincObj.run_on_batteries){
+    if(!tmpGPUBoincObj.runOnBatteries){
       boidAppEvents.emit('gpu.suspend')
       ipc.send('log', "Suspending computation - on batteries")
     }
@@ -35,12 +35,12 @@ globalPowerEvents.init = () => {
     var tmpCPUBoincObj=await boinc.config.read()
     var tmpGPUBoincObj=await gpu.config.read()
 
-    if(!tmpCPUBoincObj.run_on_batteries){
+    if(!tmpCPUBoincObj.runOnBatteries){
       boidAppEvents.emit('boinc.resume')
       ipc.send('log', "Resuming computation")
     }
 
-    if(!tmpGPUBoincObj.run_on_batteries){
+    if(!tmpGPUBoincObj.runOnBatteries){
       boidAppEvents.emit('gpu.resume')
       ipc.send('log', "Resuming computation")
     }
@@ -56,12 +56,12 @@ function _timeoutCPUFunction(){
       var tmpConfigObj=await config.get()
       var tmpCPUBoincObj=await boinc.config.read()
 
-      if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.run_if_user_active) {
+      if(tmpConfigObj.state.cpu.toggle && !tmpCPUBoincObj.runIfUserActive) {
         if(idleTime===0){
           await ipc.send('log', "Suspending computation - computer is in use")
           await boidAppEvents.emit('boinc.suspend')
 
-          globalPowerEvents.intervalTimer=parseInt(tmpCPUBoincObj.idle_time_to_run, 10) * 60000
+          globalPowerEvents.intervalTimer=parseInt(tmpCPUBoincObj.idleTimeToRun, 10) * 60000
           setTimeout(_timeoutCPUFunction, globalPowerEvents.intervalTimer)
         }else{
           await ipc.send('log', "Resuming computation")
@@ -82,12 +82,12 @@ function _timeoutGPUFunction(){
       var tmpConfigObj=await config.get()
       var tmpGPUBoincObj=await gpu.config.read()
   
-      if(tmpConfigObj.state.gpu.toggle && !tmpGPUBoincObj.run_if_user_active) {
+      if(tmpConfigObj.state.gpu.toggle && !tmpGPUBoincObj.runIfUserActive) {
         if(idleTime===0){
           await ipc.send('log', "Suspending computation - computer is in use")
           await boidAppEvents.emit('gpu.suspend')
   
-          globalPowerEvents.intervalTimer=parseInt(tmpGPUBoincObj.idle_time_to_run, 10) * 60000
+          globalPowerEvents.intervalTimer=parseInt(tmpGPUBoincObj.idleTimeToRun, 10) * 60000
           setTimeout(_timeoutGPUFunction, globalPowerEvents.intervalTimer)
         }else{
           await ipc.send('log', "Resuming computation")

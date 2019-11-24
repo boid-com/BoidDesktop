@@ -464,9 +464,9 @@ boinc.config = {
     } catch (error) {
       log.info('reset config')
       await fs.remove(boinc.config.file)
-      await boinc.config.write({autoStart:false, run_if_user_active:true, run_on_batteries:true, idle_time_to_run:3})
+      await boinc.config.write({autoStart:false, runIfUserActive:true, runOnBatteries:true, idleTimeToRun:3})
       ec(error)
-      return {autoStart:false, run_if_user_active:true, run_on_batteries:true, idle_time_to_run:3}
+      return {autoStart:false, runIfUserActive:true, runOnBatteries:true, idleTimeToRun:3}
     }
   },
   async write (config) {
