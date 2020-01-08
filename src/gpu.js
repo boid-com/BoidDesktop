@@ -146,6 +146,14 @@ var gpu = {
     async read () {
       try {
         var config = await jsonfile.readFile(path.join(path.join(GPUPATH, 'boid-gpu-config.json')))
+        /*
+         * In case of missing the new form of BOID parameters we must write them with an arbitrary value...
+        */
+        if(config.idleTimeToRun===undefined){
+          config.idleTimeToRun=3
+          config.runIfUserActive=true
+          config.runOnBatteries=true
+        }
         return config
       } catch (error) {
         await fs.remove(path.join(GPUPATH, 'boid-gpu-config.json'))
@@ -564,7 +572,7 @@ gpu.suspend = async () => {
       gpu.trex.stop()
     }
     sleep(5000)
-    boinc.shouldBeRunning = false
+    gpu.shouldBeRunning = false
   }
 }
 
