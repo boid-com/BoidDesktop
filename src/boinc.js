@@ -16,11 +16,14 @@ const cfg = require('electron-settings')
 const ipc = require('./ipcWrapper')()
 var sudo = require('sudo-prompt')
 const log = require('electron-log')
-const psList = require('ps-list')  //<--- Include the nodeJS module for checking if a process exists.
+const psList = require('ps-list')       //<--- Include the nodeJS module for checking if a process exists.
+const getos = require('getos')          //<--- Include the nodeJS module for detecting the exact version of the Linux distro.
+const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
 
 const BOINCPROJECTNAME="http://www.worldcommunitygrid.org/"       //<--- That is the name of the project we are participating. We must use this as a reference for the start/suspend/stop tasks.
 const BOINCSUSPENDCMD="project " + BOINCPROJECTNAME + " suspend"  //<--- That is the BOINCCMD command to suspend temporarily the project.
 const BOINCRESUMECMD="project " + BOINCPROJECTNAME + " resume"    //<--- That is the BOINCCMD command to resume the project.
+const LINUXBOINCPATH="/var/lib/boinc-client/"                     //<--- That is the BOINC client path under linux distros.
 
 var HOMEPATH = path.join(app.getPath('home'), '.Boid')
 // if (isDev) var HOMEPATH = path.join(app.getPath('home'), '.BoidDev')
@@ -40,7 +43,7 @@ function ec(error){
 var spawnConfig = {
   cwd: BOINCPATH,
   name: 'Boid Secure Sandbox'
-} 
+}
 
 async function setupIPC(funcName) {
   try {
@@ -60,8 +63,14 @@ var boinc = {
   eventsRegistered: false,
   initializing: false,
   shouldBeRunning: false,
-  thisPlatform: thisPlatform
+  thisPlatform: thisPlatform,
+  linuxExtraOSInfo: {}
 }
+
+/* Detect Linux exact distribution. Must be executed the earliest possible in the source code! */
+getos(function(e, os){
+  boinc.linuxExtraOSInfo=os
+})
 
 boinc.killExisting = async () => {
   try {
@@ -101,6 +110,10 @@ boinc.init = async (event) => {
     setupIPC('reset')
     setupIPC('openDirectory')
     setupIPC('state.getUI')
+
+    boidAppEvents.registerEvent('boinc.suspend', boinc.suspend)   //<--- Register the suspend event...
+    boidAppEvents.registerEvent('boinc.resume', boinc.resume)     //<--- Register the resume event...
+
     boinc.eventsRegistered = true
   } catch (error) {
     ec(error)
@@ -125,7 +138,7 @@ boinc.detectIfRunning = async () => {
   var boincProcessFound=false
   await psList().then(processData => {
     for(var i=0, len=processData.length; i<len; i++){
-      if(processData[i].name==='boinc.exe'){
+      if((processData[i].name==='boinc.exe' && thisPlatform==='win32')||(processData[i].name==='boinc' && thisPlatform!=='win32')){
         boincProcessFound=!boincProcessFound
         break
       }
@@ -139,13 +152,13 @@ boinc.spawnProcess = async () =>{
   //if (thisPlatform === 'win32') exe = 'boinc.exe'
   //else exe = './boinc'
 
-  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : './boinc')  //<--- Use the more elegant ternary expression.
+  var exe = (thisPlatform === 'win32' ? 'boinc.exe' : (thisPlatform === 'linux' ? 'boinc' : './boinc'))  //<--- Use the more elegant ternary expression.
   var params = ['-dir', BOINCPATH, '-no_gpus', '-allow_remote_gui_rpc','-suppress_net_info']
   if (thisPlatform === 'win32') params.push('-allow_multiple_clients')
 
   boinc.process = spawn(exe, params, {
     silent: false,
-    cwd: BOINCPATH,
+    cwd: BOINCPATH, //<--- Leave it untouched for Linux clients (???)
     shell: false,
     detached: true,
     env: null,
@@ -251,9 +264,21 @@ boinc.unzip = async () => {
 }
 
 boinc.checkInstalled = async () => {
-  const exists = await fs.exists(path.join(BOINCPATH, 'remote_hosts.cfg')).catch(ec)
+  var exists
+  if(thisPlatform!=='linux'){
+    exists = await fs.exists(path.join(BOINCPATH, 'remote_hosts.cfg')).catch(ec)
+  }else{
+    if(boinc.linuxExtraOSInfo.dist.toUpperCase().includes("UBUNTU")){
+      exists = await fs.exists(path.join('/var/lib/boinc/', 'remote_hosts.cfg')).catch(ec)
+    }
+  }
+
+  /* The following lines of source code have been commented out as non-usable */
+  /*
   if (!exists) return false
   else return true
+  */
+ return exists
 }
 
 boinc.cmd = async (cmd) => {
@@ -261,13 +286,64 @@ boinc.cmd = async (cmd) => {
     if (!boinc.shouldBeRunning) return null
     var pass = await fs.readFile(path.join(BOINCPATH, 'gui_rpc_auth.cfg'), 'utf8')
     var exe
-    if (thisPlatform === "win32") exe = 'boinccmd'
-    else exe = './boinccmd'
+    if (thisPlatform === "win32"){
+      exe = 'boinccmd'
+    }else{
+      if(thisPlatform!=='linux'){
+        exe = './boinccmd'
+      }else{
+        exe = 'boinccmd'
+      }
+    }
+
+    pass=(thisPlatform!=='linux' ? pass : pass.replace('\n', ''))
+
     log.info('BOINC.CMD',cmd)
-    const result = (await exec(exe + ` --host localhost --passwd ` + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
+    const result = (await exec(exe + ' --host localhost --passwd ' + pass + ' --' + cmd, { cwd: BOINCPATH })).stdout
     log.info(result)
     return result
   }catch(error){if(ec)ec(error)}
+}
+
+boinc.detectAndInstallLinux = async () => {
+  getos(function(e, os){
+    return new Promise(async function(resolve, reject){
+      await boinc.installLinux(os)
+    })
+  })
+}
+
+/* Linux Installation has been cut-off from the main installer in order to be much more maintenable */
+boinc.installLinux = async (osInfo) => {
+  var cmd=""
+
+  /* Begin the installation by installing the essential libraries for the BOINC client */
+  if(osInfo.dist.toUpperCase().includes("UBUNTU")){
+    cmd="apt-get -y install boinc"
+  }
+
+  return new Promise(async function (resolve, reject) {
+    sudo.exec(cmd, {name: 'Boid Install BOINC Client'}, async function (err, stdout, stderr) {
+      if (err) reject(err)
+      if (stdout) {
+        log.info(stdout)
+        if (stdout.indexOf('Processing triggers') > -1) {
+          log.info('BOINC CLIENT INSTALLATION FINISHED')
+          boinc.intializing = false
+          //await fs.outputFile(path.join('/var/lib/boinc/', 'remote_hosts.cfg'), 'localhost').catch(ec)
+          sudo.exec('sh -c "echo localhost >> /var/lib/boinc/remote_hosts.cfg"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+            if (error) throw error;
+            console.log('stdout: ' + stdout);
+          })
+          await boinc.prefs.init()
+          resolve(stdout)
+        }
+      }
+      if (stderr) {
+        reject(stderr)
+      }
+    })
+  })  
 }
 
 boinc.install = async () => {
@@ -275,35 +351,47 @@ boinc.install = async () => {
     if (boinc.initializing) return
     boinc.initializing = true
     await boinc.stop()
-    await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
-    if (thisPlatform === 'win32') return boinc.unzip()
-    await fs.ensureDir(BOINCPATH)
-    var cmd0 = 'rm -rf ' + BOINCPATH
-    var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC.zip') + ' -d ' + HOMEPATH
-    var cmd2 = 'cd ' + BOINCPATH
-    var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
-    var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
-    var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
-    var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done' + '"'
-    log.info(cmd)
-    return new Promise(async function (resolve, reject) {
-      sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
-        if (err) reject(err)
-        if (stdout) {
-          log.info(stdout)
-          if (stdout.indexOf('done') > -1) {
-            log.info('SANDBOX FINISHED')
-            boinc.intializing = false
-            await boinc.prefs.init()
-            resolve(stdout)
+    /* We will ammend the file "remote_hosts.cfg" in Linux after the installation has finished */
+    if(thisPlatform!=='linux'){
+      await fs.outputFile(path.join(BOINCPATH, 'remote_hosts.cfg'), 'localhost').catch(ec)
+    }
+
+    if (thisPlatform === 'win32'){
+      /* Windows Installation of BOINC client path */
+      return boinc.unzip()
+    }else if(thisPlatform === 'linux'){
+      /* Linux Installation of BOINC client path (For the time being just repeat/modify the Mac source code.) */
+      return boinc.detectAndInstallLinux()
+    }else{
+      /* Mac Installation of BOINC client path */
+      await fs.ensureDir(BOINCPATH)
+      var cmd0 = 'rm -rf ' + BOINCPATH
+      var cmd1 = 'unzip -o ' + path.join(RESOURCEDIR, 'BOINC.zip') + ' -d ' + HOMEPATH
+      var cmd2 = 'cd ' + BOINCPATH
+      var cmd3 = 'sh ' + path.join(BOINCPATH, './Mac_SA_Secure.sh')
+      var cmd4 = 'dscl . -merge /groups/boinc_master GroupMembership $USER'
+      var cmd5 = 'dscl . -merge /groups/boinc_project GroupMembership $USER'
+      var cmd = 'sh -c "'+ cmd0 + ' && ' + cmd1 + ' && ' + cmd2 + ' && ' + cmd3 + ' && ' + cmd4 + ' && ' + cmd5 + '&& echo done' + '"'
+      log.info(cmd)
+      return new Promise(async function (resolve, reject) {
+        sudo.exec(cmd, spawnConfig, async function (err, stdout, stderr) {
+          if (err) reject(err)
+          if (stdout) {
+            log.info(stdout)
+            if (stdout.indexOf('done') > -1) {
+              log.info('SANDBOX FINISHED')
+              boinc.intializing = false
+              await boinc.prefs.init()
+              resolve(stdout)
+            }
           }
-        }
-        if (stderr) {
-          // log.info(stderr)
-          reject(stderr)
-        }
+          if (stderr) {
+            // log.info(stderr)
+            reject(stderr)
+          }
+        })
       })
-    })
+    }
   }catch(error){if(ec)ec(error)}
 
   
@@ -315,7 +403,24 @@ boinc.prefs = {
     if (cb) return cb()
   },
   async write(prefs) {
-    return fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+    prefs.run_on_batteries='1'    //<--- Overwrite the settings with default value...
+    prefs.run_if_user_active='1'  //<--- Overwrite the settings with default value...
+
+    if(thisPlatform!=='linux'){
+      return fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+    }else{
+      await fs.outputFile(path.join(BOINCPATH, 'global_prefs_override.xml'), builder.buildObject({global_preferences:prefs}))
+      return async function(){
+        sudo.exec('sh -c "\cp ' + path.join(BOINCPATH, 'global_prefs_override.xml') + ' /etc/boinc-client/"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+          if (error) throw error;
+          console.log('stdout: ' + stdout)
+        })
+        sudo.exec('sh -c "echo localhost > /etc/boinc-client/gui_rpc_auth.cfg && \cp /etc/boinc-client/gui_rpc_auth.cfg ' + BOINCPATH + ' && chown $USER:$USER ' + BOINCPATH + '/gui_rpc_auth.cfg && sudo systemctl restart boinc-client.service' + '"', {name: 'BOINC Client Update'}, function(error, stdout, stderr) {
+          if (error) throw error;
+          console.log('stdout: ' + stdout)
+        })
+      }()
+    }
   },
   async read(){
      try {
@@ -359,9 +464,9 @@ boinc.config = {
     } catch (error) {
       log.info('reset config')
       await fs.remove(boinc.config.file)
-      await boinc.config.write({autoStart:false})
+      await boinc.config.write({autoStart:false, runIfUserActive:true, runOnBatteries:true, idleTimeToRun:3})
       ec(error)
-      return {autoStart:false}
+      return {autoStart:false, runIfUserActive:true, runOnBatteries:true, idleTimeToRun:3}
     }
   },
   async write (config) {
@@ -376,7 +481,7 @@ boinc.config = {
 
 boinc.state = {
   async getAll () {
-    const stateFile = path.join(BOINCPATH, './client_state.xml')
+    const stateFile = (thisPlatform!=='linux' ? path.join(BOINCPATH, './client_state.xml') : path.join(LINUXBOINCPATH, './client_state.xml'))
     try {
       var exists = await fs.exists(stateFile)
       if(!exists) throw ('state file does not exist')
@@ -424,7 +529,7 @@ boinc.state = {
     return stats
   },
   async clear () {
-    const stateFile = path.join(BOINCPATH, './client_state.xml')
+    const stateFile = (thisPlatform!=='linux' ? path.join(BOINCPATH, './client_state.xml') : path.join(LINUXBOINCPATH, './client_state.xml'))
     try {
       var exists = await fs.exists(stateFile)
       if(exists) await fs.remove(stateFile)
@@ -434,5 +539,23 @@ boinc.state = {
     }
   }
 }
+
+/* START OF EVENTS AREA */
+boinc.suspend = async () => {
+  if(boinc.shouldBeRunning){
+    boinc.cmd(BOINCSUSPENDCMD)  //<--- The project gets suspended only.
+    sleep(5000)
+    boinc.shouldBeRunning = false
+//    boinc.send('Stopped')
+  }
+}
+
+boinc.resume = async () => {
+  if(!boinc.shouldBeRunning){
+    boinc.shouldBeRunning = true
+    boinc.cmd(BOINCRESUMECMD)  //<--- The project gets suspended only.
+  }
+}
+/* END OF EVENTS AREA */
 
 module.exports = boinc

@@ -13,6 +13,8 @@ const { exec } = require('child-process-promise')
 const jsonfile = require('jsonfile')
 const cfg = require('electron-settings')
 const log = require('electron-log')
+const boidAppEvents = require('./boidAppEvents')  //<--- Our In-House nodeJS module for events sub/sink.
+
 function ec(error){
   log.error(error)
   if (gpu.window) gpu.emit('error',{date:Date.now(),error})
@@ -81,8 +83,14 @@ var gpu = {
   deviceID: null,
   window: null,
   async reset () {
-    await gpu.wildrig.stop()
-    await gpu.trex.stop()
+    //Minor optimization...
+    if(gpu.wildrig.miner){
+      await gpu.wildrig.stop()
+    }
+    //Minor optimization...
+    if(gpu.trex.miner){
+      await gpu.trex.stop()
+    }
     try {
       await fs.remove(GPUPATH), gpu.emit('Message', "GPU Directory removed", GPUPATH)
       app.relaunch()
@@ -167,6 +175,10 @@ var gpu = {
     setupIPC(gpu.trex, 'trex')
     setupIPC(gpu.wildrig, 'wildrig')
     setupIPC(gpu.config, 'config')
+
+    boidAppEvents.registerEvent('gpu.suspend', gpu.suspend) //<--- Register the suspend event...
+    boidAppEvents.registerEvent('gpu.resume', gpu.resume)   //<--- Register the resume event...
+
     gpu.eventsRegistered = true
   },
   async getGPU () {
@@ -538,11 +550,35 @@ var gpu = {
       }
     }
   }
-
-
 }
 
-
 // ipcMain.on( 'gpu.init', gpu.init )
+
+/* START OF EVENTS AREA */
+gpu.suspend = async () => {
+  if(gpu.shouldBeRunning){
+    if(gpu.wildrig.miner){
+      gpu.wildrig.stop()
+    }
+    if(gpu.trex.miner){
+      gpu.trex.stop()
+    }
+    sleep(5000)
+    boinc.shouldBeRunning = false
+  }
+}
+
+gpu.resume = async () => {
+  if(!gpu.shouldBeRunning){
+    gpu.shouldBeRunning = true
+    if(gpu.wildrig.miner){
+      gpu.wildrig.start()
+    }
+    if(gpu.trex.miner){
+      gpu.trex.start()
+    }
+  }
+}
+/* END OF EVENTS AREA */
 
 module.exports = gpu

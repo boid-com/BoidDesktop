@@ -3,6 +3,8 @@ const platform = require( 'os' ).platform()
 const cfg = require( 'electron-settings' )
 var gpu = require('./gpu')
 var boinc = require('./boinc')
+const boidAppEvents = require('./boidAppEvents')
+const globalPowerEvents = require('./globalPowerEvents')
 const isDev = require('electron-is-dev')
 const log = require('electron-log')
 const path = require('path')
@@ -44,6 +46,9 @@ function init(appWindow) {
   })
   if (isDev) appWindow.webContents.executeJavaScript("webview.loadURL('http://localhost:8080/desktop2')")
   else appWindow.webContents.executeJavaScript("webview.loadURL('https://app.boid.com/desktop2')")
+
+  boidAppEvents.init()
+  globalPowerEvents.init()
 }
 
 function destroyBOINCClient(){
