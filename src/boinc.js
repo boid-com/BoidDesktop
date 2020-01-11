@@ -451,6 +451,7 @@ boinc.config = {
         await fs.writeJson(boinc.config.file, config)
       }
       const newConf = await boinc.config.read()
+
       boinc.send('config.read', newConf)
       return newConf
     } catch (error) {return ec(error)}
@@ -460,6 +461,16 @@ boinc.config = {
       log.info('read config', boinc.config.file)
       var config = await fs.readJson(boinc.config.file)
       if (Object.keys(config).length == 0) throw('Config missing')
+
+      /*
+       * In case of missing the new form of BOID parameters we must write them with an arbitrary value...
+       */
+      if(config.idleTimeToRun===undefined){
+        config.idleTimeToRun=3
+        config.runIfUserActive=true
+        config.runOnBatteries=true
+      }
+
       return config
     } catch (error) {
       log.info('reset config')
